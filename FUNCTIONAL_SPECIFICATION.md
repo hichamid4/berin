@@ -1,6 +1,6 @@
 ﻿# BreIn Functional Specification
 
-**Status:** Draft for review — no application implementation authorized by this document  
+**Status:** Approved functional specification; database decisions approved; Stage 1 foundation/authentication complete; Stage 2 not started.
 **Source of functional requirements:** *Mémoire de Projet de Fin de Cycle — Web Application: BreIn*, Hicham ID AHMED, academic year 2022–2023 (43 pages).  
 **Purpose:** Consolidate the original report into a traceable specification. Report statements, interpretations, and technical proposals are labeled separately.
 
@@ -8,7 +8,10 @@
 
 - **[Report]** means stated in report prose, shown in a figure, or both.
 - **[Proposal]** means a technical organization suggested here; it is not an original requirement.
-- **[Open]** means the report is contradictory, incomplete, or does not establish whether a feature is intended for the first release.
+- **[Decision]** means a user-confirmed product or schema decision that resolves, narrows, or excludes an item in the report.
+- **[Implemented]** means present in the repository and verified as of the status noted in Section 11.4.
+- **[Pending]** means approved for v1 but not yet implemented.
+- **[Open]** means a report detail that remains unresolved and is not silently decided by this specification.
 
 The report includes prose, a requirements/module diagram, a use-case diagram, a class diagram, two sequence diagrams, and screenshots/descriptions of some existing pages. It does **not** include database DDL, field-level validation rules, API contracts, or complete textual use-case specifications. Cardinalities and attributes below are transcribed from the class diagram where legible; their implementation meaning must be confirmed where unclear.
 
@@ -27,19 +30,19 @@ IDs below are assigned for traceability; they are not identifiers from the repor
 | ID | Requirement | Source/evidence | Status |
 |---|---|---|---|
 | ACC-01 | A user can register as either a Homeowner or Handyman. | Brief, signup page description, use-case diagram | Explicit |
-| ACC-02 | Signup collects user information: first name, last name, login/username, password, email, phone, city, address, and account type. | Account-module workflow | Explicit; exact field names/requiredness unclear |
-| ACC-03 | Handyman signup/profile specifies skills. | Brief; class diagram Skills | Explicit |
+| ACC-02 | Signup collects first name, last name, username, password, email, optional phone, account type, and optional profile city/address. | Account-module workflow; approved profile default | Explicit; Stage 1 registration implemented for identity and profile fields |
+| ACC-03 | Handyman profile specifies skills. | Brief; class diagram Skills | Explicit; schema implemented, skill management pending |
 | ACC-04 | Validate submitted registration data; save if valid and return to signup if invalid. | Account-module workflow | Explicit; validation rules unspecified |
 | ACC-05 | Confirm account creation and send an email notification. | Account-module workflow | Explicit |
-| ACC-06 | Activate an account through a link/button in an email; on success update account state and redirect to BreIn home; on failure return to login. | Account-module workflow | Explicit |
-| ACC-07 | Users can log in with email and password. | Login page description | Explicit |
-| ACC-08 | Users can log out. | User class; screenshot description | Explicit |
+| ACC-06 | Activate an account through a link in email; update account verification state after a valid signed link. | Account-module workflow; approved email verification | Explicit; implemented and feature-tested |
+| ACC-07 | Users can log in with email and password. | Login page description | Explicit; role-specific Stage 1 login implemented and feature-tested |
+| ACC-08 | Users can log out. | User class; screenshot description | Explicit; implemented and feature-tested |
 | ACC-09 | A user can edit account/profile information. | Account module; homeowner dashboard | Explicit |
 | ACC-10 | A user can change/update their password. | Account module | Explicit |
-| ACC-11 | A user can delete their account. | Account module | Explicit in module; flow/details unspecified |
-| ACC-12 | The user diagram includes “Forgot Password.” | Use-case diagram | Explicit in diagram; workflow unspecified |
-| ACC-13 | “Activate account” is labeled “2FA” in the module/organigram. | Account module and organigram | Open: conflicts with email activation flow; does not define second-factor authentication |
-| ACC-14 | Administrator authenticates to a protected admin account/area. | Admin actor description and diagram; project brief supplied by user | Explicit at role level; exact login flow unspecified |
+| ACC-11 | Account closure preserves historical marketplace records by anonymizing the account; clear unique email and username and mark the identity anonymized. | Account module; approved database default | Decision: behavior approved; self-service account-closure UI is pending |
+| ACC-12 | The user diagram includes “Forgot Password.” | Use-case diagram | Explicit; included in v1 and implemented/tested in Stage 1 |
+| ACC-13 | “Activate account” is labeled “2FA” in the module/organigram. | Account module and organigram | Decision: email verification is the activation method; true 2FA is excluded from v1 |
+| ACC-14 | Administrator authenticates to a protected admin account/area. | Admin actor description and diagram; project brief supplied by user | Decision: separate protected admin login; provision via trusted Artisan command, no public admin signup; Stage 1 implemented |
 
 ### 3.2 Catalog and discovery
 
@@ -47,43 +50,43 @@ IDs below are assigned for traceability; they are not identifiers from the repor
 |---|---|---|---|
 | CAT-01 | Homeowner can browse/consult the service catalog and category list. | Brief, use-case diagram, class diagram | Explicit |
 | CAT-02 | Homeowner can search services by category. | Brief, use-case diagram, services page description | Explicit |
-| CAT-03 | Homeowner can search by service and price. | Use-case diagram | Explicit in diagram; price semantics/range unspecified |
+| CAT-03 | Homeowner can search by service and price. | Use-case diagram; confirmed price-filter rule | Decision: price filtering uses submitted offer prices; filter UI/range pending |
 | CAT-04 | Homeowner can view/list handymen. | Use-case diagram and organigram | Explicit in diagram |
-| CAT-05 | Homeowner can search handymen by rating, location, or likes. | Use-case diagram | Explicit in diagram; meaning and ranking unspecified |
-| CAT-06 | Handyman can search/filter requests by category, service, or location. | Use-case diagram; actor prose says filtering is future work | Open: diagram shows search; prose explicitly describes filtering as future functionality |
-| CAT-07 | Handyman sees only requests matching their skills. | Project brief | Explicit |
+| CAT-05 | Homeowner can search handymen by rating, location, or likes/favorites. | Use-case diagram; confirmed favorites decision | Decision: likes mean removable favorites; rating aggregation and precise location filters remain implementation detail |
+| CAT-06 | Handyman can filter homeowner requests by category, service, and city/location. | Use-case diagram; actor prose says filtering is future work | Decision: included in v1; pending implementation |
+| CAT-07 | Handyman sees only requests matching their skills and the approved service-to-skill mapping. | Project brief; approved schema decision | Decision: server-side matching; pending implementation |
 
 ### 3.3 Requests and offers
 
 | ID | Requirement | Source/evidence | Status |
 |---|---|---|---|
 | REQ-01 | Homeowner creates a service request after selecting a category/service. | Brief, request sequence, page descriptions | Explicit |
-| REQ-02 | Request contains service description and desired work start date; location is mentioned in homeowner use-case prose. | Request page; homeowner use-case prose | Explicit; exact location fields unspecified |
+| REQ-02 | Request contains description, desired work start date, and a private service location/city separate from profile address. | Request page; homeowner use-case prose; approved privacy rule | Explicit; approved columns are in the schema |
 | REQ-03 | Request can include one or more photos; photos are optional. | Request page, sequence, class diagram PictureOff | Explicit |
 | REQ-04 | Request sequence: list categories → list services for category → choose service → create request → optionally add pictures. | Sequence diagram | Explicit |
 | REQ-05 | Handyman views/list requests and request details. | Handyman use-case diagram and offer sequence | Explicit |
 | REQ-06 | Handyman submits an offer in response to a request. | Brief, class diagram, offer sequence | Explicit |
-| REQ-07 | Offer contains price, start date, end date, and description. | Class diagram Offer | Explicit as modeled; requiredness/meaning of dates unclear |
+| REQ-07 | Offer contains positive price in MAD, proposed start/end dates, and description. | Class diagram Offer; approved defaults | Decision: dates are required and end date cannot precede start date |
 | REQ-08 | Offer may include pictures. | Offer sequence and PictureOff class | Explicit in diagram |
 | REQ-09 | Homeowner can review received offers and accept or refuse an offer. | Brief and homeowner actor prose | Explicit |
-| REQ-10 | The system supports offer/request status sufficient to show whether an offer has been sent and whether it was accepted/refused. | Homeowner dashboard description | Explicit outcome; state model unspecified |
-| REQ-11 | Handyman can create a request for a service they offer. | Handyman actor prose | Open: conflicts with homeowner-only request flow and sequence diagram |
-| REQ-12 | Handyman can accept or decline requests. | Handyman prose and use-case diagram | Open: conflicts with core offer workflow; relationship to submitting an offer unspecified |
-| REQ-13 | Handyman can display/manage their request list and accept/decline items. | Use-case diagram | Explicit in diagram; semantics and relationship to REQ-11/12 open |
+| REQ-10 | The system supports offer/request statuses to show submitted, accepted, refused, withdrawn, or superseded offers and request progress. | Homeowner dashboard description; approved state defaults | Decision: explicit lifecycle recorded in Section 11.3; pending workflow implementation |
+| REQ-11 | Handyman can create a request for a service they offer. | Handyman actor prose | Decision: excluded; only homeowners create service requests |
+| REQ-12 | Handyman can accept or decline requests. | Handyman prose and use-case diagram | Decision: excluded as a conflicting interpretation; handymen submit offers, and homeowners accept/refuse offers |
+| REQ-13 | Handyman can view matching requests and manage their own submitted offers. | Use-case diagram reconciled with the approved workflow | Decision: pending implementation; handyman cannot accept/decline a homeowner request |
 
 ### 3.4 Communication, appointments, reviews, and payment
 
 | ID | Requirement | Source/evidence | Status |
 |---|---|---|---|
-| COM-01 | After a homeowner accepts/reserves a service, the parties can communicate directly. | Brief | Explicit; channel is not fixed here |
-| COM-02 | Homeowner can contact handyman via phone number. | Dashboard description | Explicit |
-| COM-03 | Homeowner use-case says contact is via WhatsApp after booking. | Actor description | Explicit mention; whether this means a deep link, stored number, or in-app integration is unspecified |
-| COM-04 | Use-case/organigram includes messaging, instant messages, sharing pictures/documents, and scheduling appointments. | Use-case diagram and organigram | Explicit in figures; delivery and scope unclear |
-| COM-05 | Homeowner and handyman can schedule, accept, decline, and reschedule appointments. | Use-case diagram and class methods | Explicit in figures; rules/time-zone/status details unspecified |
-| REV-01 | Homeowner can review/rate a handyman. | Brief, use-case diagram, class diagram Reviews | Explicit |
-| REV-02 | Review supports comment, rating, like, and dislike actions. | Use-case diagram and class diagram | Explicit in figures; can like/dislike coexist, and who may review are unclear |
+| COM-01 | After an offer is accepted, the homeowner can contact the selected handyman through WhatsApp. | Brief and homeowner use case; user-confirmed channel | Decision: WhatsApp only, post-acceptance; pending implementation |
+| COM-02 | Homeowner can contact handyman via phone number. | Dashboard description | Decision: number exposure/action only for the accepted offer participants; exact display/link UX pending |
+| COM-03 | Homeowner use-case says contact is via WhatsApp after booking. | Actor description | Decision: confirmed as the sole communication channel after acceptance |
+| COM-04 | Use-case/organigram includes messaging, instant messages, sharing pictures/documents, and scheduling appointments. | Use-case diagram and organigram | Decision: internal messaging, document sharing, and appointment scheduling are excluded from v1 |
+| COM-05 | Homeowner and handyman can schedule, accept, decline, and reschedule appointments. | Use-case diagram and class methods | Decision: excluded from v1 |
+| REV-01 | Homeowner can review/rate a handyman after an accepted offer's request is completed and the homeowner owns that request. | Brief, use-case diagram, class diagram Reviews; approved review rule | Decision: one review per offer; transaction and server authorization required; pending implementation |
+| REV-02 | Review includes a required 1–5 rating and optional comment. A homeowner favorite/like is a separate relation to a handyman. | Use-case and class diagrams; confirmed likes meaning | Decision: review likes/dislikes are excluded; homeowner favorites included |
 | REV-03 | Administrator can monitor reviews. | Brief | Explicit; moderation actions/criteria unspecified |
-| PAY-01 | Payment is represented in the use-case diagram for Handyman, with Cash and Online variants; Online shows Credit Card and PayPal. | Use-case diagram and organigram | Explicit in figures; role, timing, processing, and whether operational in original release are unclear |
+| PAY-01 | Payment is represented in the use-case diagram for Handyman, with Cash and Online variants; Online shows Credit Card and PayPal. | Use-case diagram and organigram | Decision: all online/offline payment functionality is excluded from v1 |
 
 ### 3.5 Administration and public/contact pages
 
@@ -102,32 +105,31 @@ IDs below are assigned for traceability; they are not identifiers from the repor
 
 ## 4. Role-permission matrix
 
-“Allowed” below reflects the report. “Open” means the report does not establish a safe, precise permission. Server-side enforcement is a **project constraint supplied by the user**, not something the report specifies technically.
+Permissions below reflect the report as reconciled with the user's confirmed decisions. Server-side enforcement is a project constraint supplied by the user; its authentication boundary is implemented in Stage 1, while marketplace ownership policies remain pending with their modules.
 
 | Capability | Homeowner | Handyman | Administrator |
 |---|---|---|---|
-| Register self | Yes | Yes | No self-registration specified |
-| Log in / log out | Yes | Yes | Admin login described; logout implied by user/account module, exact admin flow not detailed |
-| Edit own profile / change password / delete own account | User module says User; treat as account-owner actions, subject to confirmation | Same | Same; admin account lifecycle unspecified |
-| Set/manage handyman skills | No | Set skills at signup; subsequent editing unclear | Manage skills (operations unclear) |
-| Browse service catalog/categories | Yes | Search services is shown; catalog browsing unclear | View/manage catalog |
-| Search services by category/service/price | Yes | Search services shown; filters conflict with “future” prose | No special search permission stated; admin overview exists |
-| Search/list handymen, rating/location/likes | Yes | No | No |
-| Create service request | Yes | Open: actor prose says yes, main flow says homeowner | No |
-| See requests | Own requests and their offers are implied by dashboard | Matching-skill requests only (brief); request search/details shown | No global request-management permission stated |
-| Submit offer | No | Yes | No |
-| Accept/refuse offer | Yes, for own request | No | No |
-| Accept/decline a request | No | Open/contradictory handyman use case | No |
-| Contact/message | After acceptance; phone/WhatsApp/in-app channel references conflict/are unclear | After acceptance implied; messaging diagram includes handyman | No |
-| Manage appointments | Schedule/accept/decline/reschedule in diagram | Schedule/accept/decline/reschedule in diagram | No |
-| Submit rating/review | Yes, for handyman/service interaction implied | No | Monitor reviews |
-| Like/dislike | Homeowner actor diagram | Not assigned | Not assigned |
-| Payments | Not assigned in payment diagram | Payment actor is Handyman | No |
+| Register self | Yes; email verification required | Yes; email verification required | No public self-registration; trusted CLI provisioning |
+| Log in / log out / password reset | Yes | Yes | Yes, through separate protected admin sign-in |
+| Edit own profile / change password / close account | Yes; closure anonymizes identity and preserves history (UI pending) | Same | Managed through trusted admin process; no public self-registration |
+| Set/manage handyman skills | No | Define and manage own skills (pending) | Manage skills |
+| Browse service catalog/categories | Yes | Yes | View/manage catalog |
+| Search services by category/service/price | Yes; price uses offer prices | Search/filter matching requests by category/service/city | Search/view records for administration |
+| Search/list handymen by rating/location/likes | Yes; favorites are removable | No | No |
+| Create service request | Yes, own account | No | No |
+| See requests | Own requests, details, and photos | Only matching requests/details/photos permitted by skill rules | Monitor platform requests |
+| Submit/track offer | Receive offers on own requests | Submit and track own offers | Monitor platform offers |
+| Accept/refuse offer | Yes, only for own request | No | No |
+| Accept/decline a request | No | No; submit an offer instead | No |
+| Contact through WhatsApp | Only after accepting an offer for that request | WhatsApp contact available to the homeowner after acceptance | No conversation access; no internal chat |
+| Manage appointments or payments | No; excluded from v1 | No; excluded from v1 | No |
+| Submit rating/review | Yes, only after an accepted offer's request is completed and owned by them | No | Monitor reviews |
+| Favorite/like handyman | Yes; add/remove favorite | No | No |
 | Manage users/block/unblock | No | No | Yes |
-| Manage categories/services | No | No | Yes |
-| About Us / Contact Us | Contact page available to user | Contact page available to user | Contact page available to user |
+| Manage categories/services/skills | No | No | Yes |
+| About Us / Contact Us | Public information/contact page | Public information/contact page | Public information/contact page |
 
-**Authorization proposal [Proposal]:** Scope private records to their owning user and enforce role and ownership checks in backend/API policies. In particular, homeowners must only see/manage their own requests and offers; handymen must only see skill-matching eligible requests and their own offers/profile; administrative capabilities require an administrator role. Exact exceptions require approval if the report implies them.
+**Authorization rule [Decision]:** Scope private records to their owner and enforce role and ownership checks on the server. Homeowners may access only their own requests/offers/profile and service locations; handymen may access only skill-matched requests and their own offers/profile; only administrators may access the administration area. The Stage 1 role boundary is implemented; marketplace ownership checks are pending with their modules.
 
 ## 5. Use-case-to-feature mapping
 
@@ -140,19 +142,19 @@ IDs below are assigned for traceability; they are not identifiers from the repor
 | Homeowner: consult catalog | Browse categories/services | CAT-01–03 |
 | Homeowner: search handyman | List/search by rating, location, likes | CAT-04–05 |
 | Homeowner: create request | Select category/service, fill details/date/location, optional photos | REQ-01–04 |
-| Handyman: view/search requests | Skill-matched list/details; filtering is unresolved | CAT-06–07, REQ-05 |
+| Handyman: view/search requests | Skill-matched list/details with category/service/location filters | CAT-06–07, REQ-05 |
 | Handyman: create offer | Offer details and optional photos | REQ-06–08 |
 | Homeowner: receive/choose offer | View offers and accept/refuse | REQ-09–10 |
-| Handyman request acceptance/creation | Request creation and accept/decline | REQ-11–13; contradictory/open |
-| Hire / direct exchange | Phone, WhatsApp, messaging, documents and pictures | COM-01–04 |
-| Appointment | Schedule, accept, decline, reschedule | COM-04–05 |
-| Review handyman | Comment, rate, like/dislike | REV-01–02 |
-| Payment | Cash or online card/PayPal | PAY-01; scope/actor unclear |
+| Handyman request acceptance/creation | Excluded; handyman submits an offer and homeowner creates the request | REQ-11–13; user-confirmed resolution |
+| Hire / direct exchange | WhatsApp contact after acceptance; no internal messaging/media | COM-01–04 |
+| Appointment | Excluded from v1 | COM-04–05 |
+| Review handyman | Required 1–5 rating and optional comment after verified completion; favorites are separate | REV-01–02 |
+| Payment | Excluded from v1 | PAY-01; user-confirmed resolution |
 | Public information/contact | About Us and Contact Us message | PUB-01–02 |
 
 ## 6. Database entity and relationship proposal
 
-The list below reconstructs the report’s class diagram and adds only structural database decisions needed to represent those concepts. It is a proposal, not an approved schema. “Multiplicity” reflects the visible UML where legible; ambiguous cardinalities need confirmation.
+The following is the source-analysis transcription of the report's class diagram. Its unresolved UML observations are retained for traceability; it is not the schema authority. The approved relational schema is specified in Section 11.3 and was created in Stage 1. “Multiplicity” reflects the visible UML where legible.
 
 | Entity | UML attributes shown | Relationship proposal |
 |---|---|---|
@@ -161,7 +163,7 @@ The list below reconstructs the report’s class diagram and adds only structura
 | `Handyman` | `handyman_id`, `address`, `city`, `rate`, `maritalStatus`, `birthday`, `picture`, `gender` | User subtype/profile; can have many skills; participates in offers and reviews. Some fields are shown but not justified by a use case. |
 | `Admin` | `admin_id`, `address`, `city` | Admin identity/profile; report associates admin with user-management and catalog operations. Whether it inherits from User is visually/semantically unclear; project requirement establishes separate role. |
 | `Category` | `category_id`, `categoryName` | One Category to one or more Services in UML. |
-| `Service` | `service_id`, `serviceName`, `description` | Belongs to one Category; associated with Demande(s); associated to Skills in UML. Exact skill/service relation needs confirmation. |
+| `Service` | `service_id`, `serviceName`, `description` | Belongs to one Category; associated with Demande(s); associated to Skills in UML. The UML line is unclear; approved many-to-many mapping is in Section 11.1. |
 | `Skills` | `skill_id`, `skillName`, `description` | Handymen have skills (diagram indicates many-to-many); skill/service association appears many-to-many or unclear from crossing lines. |
 | `Demande` (Request) | `demande_id`, `title`, `creationDate`, `startDate` | Belongs to one Homeowner and one Service per visible links; has zero or more Offers. Description/location are required by prose but absent as UML attributes. |
 | `Offer` | `offer_id`, `price`, `startDate`, `endDate`, `description` | Linked to a Demande and Handyman; can have optional picture(s), Messages, and at most one Review in diagram. UML cardinalities around Offer/Request are hard to interpret and should be reviewed. |
@@ -180,7 +182,9 @@ The list below reconstructs the report’s class diagram and adds only structura
 - Expose business operations through versioned JSON APIs independent of the website UI, allowing a future Flutter client to reuse the same authentication, validation, and authorization rules.
 - Use secure password hashing, activation tokens, and server-side validation as standard implementation safeguards. These choices do not add user-facing features.
 
-## 7. Contradictions and ambiguities requiring decisions
+## 7. Report contradictions and ambiguities with current resolution
+
+The following list preserves the original report analysis. User-confirmed resolutions and remaining implementation detail are summarized after it; “Open” observations in the report do not override the confirmed decisions.
 
 1. **Who creates requests?** Main brief, homeowner screens, and request sequence assign request creation to homeowners. Handyman prose and the use-case diagram also show handyman request creation.
 2. **Offer versus accept/decline request:** Main workflow says handymen submit offers and homeowners accept/refuse. Diagram and prose also show handyman accepting/declining demands. The state transitions and intended distinction are not defined.
@@ -201,203 +205,193 @@ The list below reconstructs the report’s class diagram and adds only structura
 17. **Offer dates and price:** UML fields are present but currency, date meanings, availability, and editing/cancellation behavior are unspecified.
 18. **Geographic matching:** Location/geolocation is shown, but no distance, privacy, or matching rule is defined.
 
-## 8. Explicitly documented versus implementation status unclear
+| Report issue | Approved resolution / remaining detail |
+|---|---|
+| 1. Who creates requests? | Resolved: homeowners only. Handyman-created homeowner requests are excluded from v1. |
+| 2. Offer vs accept/decline request | Resolved: handymen submit offers; homeowners accept/refuse offers. |
+| 3. Activation vs 2FA | Resolved: email verification is used; 2FA is excluded from v1. |
+| 4. Messaging channel | Resolved: WhatsApp only after acceptance; no internal chat or document sharing. Exact link presentation is a UI detail. |
+| 5. Appointments | Resolved: excluded from v1. |
+| 6. Payments | Resolved: online and cash payments are excluded from v1. Initial offer currency is MAD. |
+| 7. Handyman request filtering | Resolved: filtering is included; results remain restricted by skill/service matching. |
+| 8. Admin taxonomy | Resolved at capability level: admin manages users/status, categories, services, and skills, and monitors reviews/activity. Specific moderation and statistic displays are implemented only from persisted data. |
+| 9. Admin identity | Resolved: one shared `users` identity table with `admin` role; no public admin registration. |
+| 10. Data-model gaps | Resolved by Section 11.3 schema and business rules. Messaging/appointment/payment persistence is excluded. |
+| 11. Profile fields | Resolved default: name, username, email, optional phone; homeowner/handyman profile city/address; optional handyman photo. No CIN, birthday, gender, marital status, or geolocation is collected in v1. Service address is separate and private on a request. |
+| 12. Likes/dislikes | Resolved: homeowner favorite of a handyman, separate from review; review like/dislike excluded. Rating is 1–5; comment optional. |
+| 13. Pictures | Resolved: separate private request/offer photo tables, each keyed by `(storage_disk, storage_path)` and ordered per parent. No chat or document attachments. |
+| 14. Messages | Resolved: no internal messages. |
+| 15. Contact Us | Still pending: recipient, retention, and response workflow must be decided before implementing the form. |
+| 16. Account deletion/password reset | Resolved: forgot-password included; closure anonymizes and soft-deletes the account while retaining historical foreign keys. Password reset, verification, and authentication reject anonymized users. |
+| 17. Offer dates and price | Resolved: offer has positive decimal price in MAD, start date, end date, and description; end date cannot precede start date. Editing/withdrawal restrictions are enforced with offer transitions in its module. |
+| 18. Geographic matching | Resolved default: use city/location text filters, not coordinate/distance matching. Exact service location remains private and is exposed only to authorized participants. |
 
-### Clearly part of the described core
+## 8. Documented scope and implementation status
 
-These are repeated in the project brief, realization chapter, or a concrete workflow: responsive website; homeowner/handyman registration; handyman skills; email activation; email/password login; service/category browsing; homeowner request with description, desired date, and optional photos; skill-matched requests; handyman offers; homeowner accept/refuse; post-acceptance direct contact; homeowner dashboard showing own requests/offers and profile/logout; admin category/service management; review/rating; user account profile/password management.
+### Confirmed v1 functionality
 
-### Present in documentation, but first-release implementation status unclear
+These are report requirements and/or user-confirmed v1 behavior: responsive website; homeowner/handyman registration and email verification; email/password login, logout, and forgot-password; profile/password management; catalog and filters; homeowner-only requests with private location and optional photos; skill-matched handyman discovery; offers with optional photos; homeowner offer choice; WhatsApp after acceptance; completion confirmation; eligible rating/review; removable homeowner favorites; admin account blocking and platform content/user management. Stage 1 implementation status is enumerated in Section 11.6; other approved items remain pending.
 
-These are documented somewhere in the report, and therefore are not silently discarded, but lack a complete workflow or conflict with another section: 2FA; forgot password; self-service account deletion; handyman-created requests and accept/decline; handyman filtering; handyman discovery filters by rating/location/likes; in-app instant messages and picture/document sharing; appointment scheduling lifecycle; cash/card/PayPal payment; likes/dislikes independent of ratings; admin block/unblock and review moderation details; contact-message processing; some UML-only profile fields.
+### Report features explicitly excluded from v1 or requiring detail before their later implementation
 
-## 9. Proposed minimal implementation scope
+The report still supplies traceability for true 2FA, handyman-created requests/direct request acceptance, internal messaging/media/documents, appointment scheduling, and cash/card/PayPal payments; each is explicitly excluded from v1. Review like/dislike is excluded in favor of a separate homeowner favorite. Contact Us handling, admin review moderation beyond monitoring, precise rating/handyman ranking semantics, optional profile updates, and a few page-content details are pending their respective implementation phase. These are not silently treated as shipped functionality.
 
-This is a **scope proposal for approval**, not an authorization to implement. It keeps the report’s central homeowner–handyman service flow intact and avoids treating incomplete diagrams as permission to build complex integrations.
+## 9. Approved v1 implementation scope
+
+This is the approved scope, based on the report and the user's confirmed decisions. Stage 1 is complete; the remaining modules are not yet implemented.
 
 ### Baseline for the first website increment
 
-1. Three roles with separate protected experiences: Homeowner, Handyman, Administrator; secure authentication and backend-enforced role/ownership authorization.
-2. Homeowner/Handyman signup, email activation, login/logout, profile/password management; capture only fields confirmed as necessary for the flow.
-3. Admin-managed categories, services, and handyman skills, plus user list/details and block/unblock if confirmed as baseline admin operations.
-4. Homeowner service discovery and request creation with description, requested start date, location, and optional photos.
-5. Skill-matched handyman request list/details and offer submission with price, proposed dates, description, optional pictures.
-6. Homeowner dashboard for own requests/offers and accept/refuse actions.
-7. Contact exchange after acceptance, using the channel the owner approves (report references phone/WhatsApp/in-app messaging; choose only after resolving item 4 above).
-8. Reviews and ratings after a completed/accepted service, subject to an approved eligibility rule; admin review monitoring.
-9. About Us and Contact Us pages; contact form behavior to be confirmed.
-10. Responsive, uncluttered web UI; backend business logic exposed through reusable APIs for a later Flutter client.
+1. Three protected roles and dashboards with backend-enforced authentication/role checks.
+2. Homeowner/handyman registration, email verification, login/logout, forgot-password, and controlled administrator provisioning.
+3. Role/profile foundation and approved MySQL marketplace schema, including referential, status, photo-key, review, and accepted-offer constraints.
+4. Admin user/profile management, block/unblock, category/service/skill management, persisted activity monitoring, and data-derived statistics.
+5. Catalog, homeowner service/handyman search, handyman skill matching, and request filters.
+6. Homeowner requests/photos, handyman offers/photos and tracking, homeowner comparison/acceptance, and confirmed completion.
+7. Authorized post-acceptance WhatsApp, eligible reviews/ratings, and homeowner favorites.
+8. About Us and Contact Us; Contact Us retention and recipient must be decided before that module.
+9. Responsive UI and backend organization that allows a later versioned API/Flutter client to reuse business rules. No mobile app is part of v1.
 
-### Hold for explicit product decision before implementation
+### Explicitly excluded from v1
 
-Do not silently omit these from the product specification; decide whether they belong in the initial release or a later increment: true second-factor authentication; password reset; account deletion; handyman-created requests and direct accept/decline; advanced discovery filters; in-app chat/document sharing; appointment scheduling; payments and provider integrations; like/dislike functionality; any UML-only personal fields not needed for an approved use case.
+True 2FA; handyman-created homeowner requests and direct request acceptance; internal chat; document sharing; appointment scheduling/rescheduling; online or cash payment; review like/dislike. Add these only after explicit later approval. Do not collect UML-only identity/profile fields unless they are separately approved.
 
-**Scope safeguard:** If an item is confirmed as a required original feature, it must be planned into an increment rather than dropped. The “minimal” proposal only sequences unclear/high-complexity items pending review; it does not redefine the source report.
+**Scope safeguard:** Exclusions above are explicit v1 decisions, not accidental omissions. Preserve the report analysis so a future approved scope change can be traced.
 
-## 10. Traceability and approval checklist
+## 10. Traceability and remaining implementation detail
 
-Before schema/migrations or pages are created, approve or clarify:
+The following product/schema decisions are already approved and must not be reopened as if undecided: request creator; email verification vs 2FA; v1 feature exclusions; WhatsApp channel; review eligibility and uniqueness; rating/comment shape; favorite semantics; profile-field default; request/offer/completion lifecycle; skill mapping; anonymization and blocked-account behavior; MAD currency; MySQL concurrency guard; and photo storage-key uniqueness.
 
-- Request creator and the intended meaning of handyman accept/decline.
-- Email activation versus 2FA; whether forgot-password and account deletion are in scope.
-- Post-acceptance channel: phone/WhatsApp link, in-app messages, or both; whether media/documents are required.
-- Whether appointment scheduling and payment are first-release features; payment actor, methods, and completion flow.
-- Which search filters are required at launch.
-- Review eligibility, rating/like/dislike semantics, and moderation actions.
-- Required profile fields and visibility/privacy rules.
-- Admin role storage and exact powers, including user blocking and skill/review management.
-- Contact Us message handling and retention.
+- Contact Us recipient, persistence/retention, and response path before implementing its form.
+- The initial set of statistics and presentation details for the admin panel; all displayed metrics must be derived from stored records.
+- Admin review moderation actions beyond monitoring, if later required.
+- Exact supported image formats, upload size/count limits, and storage provider before implementing uploads.
+- Precise rating/handyman-ranking calculation and filter semantics before implementing discovery.
+- API token/session strategy and API contract before exposing a Flutter-facing API.
 
-**Approval gate:** This document is for review. No migrations, database tables, application pages, or application code should be created until the specification and unresolved scope decisions are approved.
+These implementation details do not change the approved schema or v1 feature scope. No additional features should be inferred from them.
 
 ---
 
-# 11. Confirmed product scope and implementation plan
+# 11. Final approved product specification, schema, and delivery status
 
-**Authority:** This section records the user's Final Product Requirements. Where it conflicts with an earlier “Open” item or proposed scope above, this confirmed decision takes precedence. Original report requirements remain traceable in Sections 3–8; user-confirmed additions and exclusions are identified here. This is still a plan for approval, not permission to start implementation.
+**Authority:** This section records the user's confirmed product requirements, approval of the six database defaults and schema, and implementation status. If an earlier analysis section labels a point open or proposed, this section is authoritative for v1. Earlier sections remain to preserve source-to-design traceability.
 
-## 11.1 Binding version-one decisions
+## 11.1 Six approved database decisions and confirmed product rules
 
-| Topic | Confirmed version-one decision | Relationship to report |
+| Decision | Approved default and business rule |
+|---|---|
+| 1. Offer lifecycle and acceptance | Offer states are `pending`, `accepted`, `declined`, `withdrawn`, and `superseded`. Each request can have at most one accepted offer. Acceptance runs in a transaction while locking the request row; the selected offer becomes accepted, the request points to it, and other pending offers are superseded. A stored generated `accepted_request_id` and unique index provide a MySQL integrity guard. |
+| 2. Completion and review lifecycle | Request states are `open`, `booked`, `completion_pending`, `completed`, and `cancelled`. The handyman records completion first, setting `handyman_completed_at` and moving the request to `completion_pending`. It becomes `completed` only after homeowner confirmation, setting `homeowner_confirmed_at`. A review is allowed only when its offer is accepted, its request is completed, the homeowner owns the request, and no review exists. Enforce this operation in a transaction and server-side authorization; the database also enforces one review per offer. |
+| 3. Request lifecycle | Only homeowners create requests. A request starts open. Cancellation is available only before offer acceptance; after booking it cannot be deleted or cancelled through the v1 lifecycle. Historical rows are retained. Edits are limited to an open request; exact UI/validation rules are implemented with the request module. |
+| 4. Profile fields and privacy | Collect shared first/last name, unique username, unique email, optional phone; homeowner and handyman profile city/address; optional handyman photo. Do not collect CIN, birthday, gender, marital status, or geolocation in v1. Request service location/city is a separate private field, not the profile address. |
+| 5. Service-to-skill mapping | A service may map to multiple skills and a handyman may hold multiple skills. Both mappings are many-to-many. Handyman request visibility is filtered server-side using the mapping and approved location/category/service filters. |
+| 6. Account deletion and blocking | Users are not physically deleted from historical records. Closing an account anonymizes it: preserve user ID and foreign-key history, set email and username to NULL, set status `anonymized`, and set `deleted_at`. Active and blocked identities require email and username. Blocking records `blocked_at` and `blocked_by`; blocked users cannot use protected marketplace actions. |
+| Currency | Offer price is a positive `DECIMAL(12,2)`; currency defaults to `MAD` (Moroccan dirham). Price filtering uses offer prices; services have no fixed-price or homeowner-budget field. |
+| Reviews and favorites | Reviews contain `offer_id`, required rating 1–5, optional comment, and timestamps; `offer_id` is the primary key. A homeowner favorite is a separate removable homeowner/handyman relationship. Review likes/dislikes are excluded. |
+| Communication and exclusions | WhatsApp is the only communication channel and becomes available to the homeowner only after acceptance. No internal chat, document sharing, appointments/rescheduling, payments, handyman-created requests, or 2FA in v1. |
+| Administrator | Administrator is the `admin` role in the shared users table, provisioned through a trusted CLI command; no public admin signup. The protected dashboard manages users, catalog and skills, and monitors persisted requests, offers, reviews, and activity. |
+
+## 11.2 Approved relational schema
+
+All domain tables use InnoDB. IDs and corresponding foreign keys are unsigned and type-matched. Unless explicitly marked NULL, listed columns are NOT NULL. Domain/auth event times use `DATETIME(6)` and follow the application timezone (UTC by default). Profile extension rows intentionally have no independent timestamps because their lifecycle follows the one-to-one user record.
+
+### Reconciled differences and implementation boundary
+
+- The already-executed initial migrations used MySQL `TIMESTAMP(0)` for domain/auth event columns. A forward migration was added and applied to convert all 27 such columns to `DATETIME(6)`; executed migration files were not edited to pretend existing databases had changed.
+- The initial photo migrations made `storage_path` globally unique. The forward migration replaced that constraint with the approved `(storage_disk,storage_path)` key for both photo tables. Parent/order uniqueness is retained.
+- `reviews.comment` is nullable intentionally. A rating can be submitted without written text. `offer_id` is the primary key and provides the one-review-per-offer uniqueness rule.
+- Role-to-profile consistency is maintained by the registration transaction: homeowners get homeowner profiles, handymen get handyman profiles, administrators have neither profile. MySQL foreign keys enforce profile ownership, but do not use a cross-table CHECK to enforce the role/profile pairing.
+- Profile rows intentionally omit their own created/updated timestamps; profile state follows the user record. Laravel cache/queue tables retain framework defaults. The framework sessions table keeps its nullable indexed `user_id` without a foreign key. These are intentional infrastructure/modeling choices, not missing domain relationships.
+- The Stage 1 schema supports anonymization and access denial, but the self-service closure/anonymization operation is not implemented yet. Likewise, accepted-offer locking and review-eligibility transactions are approved rules for their later modules, not yet active marketplace workflows.
+
+| Table | Columns and nullability |
+|---|---|
+| `users` | `id` BIGINT UNSIGNED PK; `role` VARCHAR(20) NOT NULL DEFAULT `homeowner`; `first_name`, `last_name` VARCHAR(100) NOT NULL; `username` VARCHAR(40) NULL UNIQUE; `email` VARCHAR(254) NULL UNIQUE; `phone_e164` VARCHAR(16) NULL; `email_verified_at` DATETIME(6) NULL; `password` VARCHAR(255) NOT NULL (hashed); `status` VARCHAR(20) NOT NULL DEFAULT `active`; `blocked_at` DATETIME(6) NULL; `blocked_by` BIGINT UNSIGNED NULL; `remember_token` VARCHAR(100) NULL; `created_at`, `updated_at`, `deleted_at` DATETIME(6) NULL. Indexes: unique username/email, `(role,status)`, `blocked_at`. CHECKs restrict role and enforce identity/status and block-state consistency. |
+| `homeowner_profiles` | `user_id` BIGINT UNSIGNED PK/FK; `address` VARCHAR(255) NULL; `city` VARCHAR(120) NULL. |
+| `handyman_profiles` | `user_id` BIGINT UNSIGNED PK/FK; `address` VARCHAR(255) NULL; `city` VARCHAR(120) NULL; `photo_path` VARCHAR(512) NULL. Index on city. |
+| `categories` | `id` BIGINT UNSIGNED PK; `name` VARCHAR(120) NOT NULL UNIQUE; `is_active` BOOLEAN NOT NULL DEFAULT true; nullable `created_at`/`updated_at` DATETIME(6). |
+| `services` | `id` BIGINT UNSIGNED PK; `category_id` BIGINT UNSIGNED NOT NULL; `name` VARCHAR(160) NOT NULL; `description` TEXT NOT NULL; `is_active` BOOLEAN NOT NULL DEFAULT true; nullable `created_at`/`updated_at` DATETIME(6). Unique `(category_id,name)`; index `(category_id,is_active)`. |
+| `skills` | `id` BIGINT UNSIGNED PK; `name` VARCHAR(120) NOT NULL UNIQUE; `description` TEXT NULL; `is_active` BOOLEAN NOT NULL DEFAULT true; nullable `created_at`/`updated_at` DATETIME(6). |
+| `handyman_skill` | `handyman_id`, `skill_id` BIGINT UNSIGNED NOT NULL; composite PK; `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6); reverse index `(skill_id,handyman_id)`. |
+| `service_skill` | `service_id`, `skill_id` BIGINT UNSIGNED NOT NULL; composite PK; reverse index `(skill_id,service_id)`. |
+| `service_requests` | `id` BIGINT UNSIGNED PK; `homeowner_id`, `service_id` BIGINT UNSIGNED NOT NULL; `title` VARCHAR(180), `description` TEXT, `service_location` VARCHAR(500), `service_city` VARCHAR(120) NOT NULL; `desired_start_date` DATE NOT NULL; `status` VARCHAR(24) NOT NULL DEFAULT `open`; `accepted_offer_id` BIGINT UNSIGNED NULL; `handyman_completed_at`, `homeowner_confirmed_at`, `cancelled_at` DATETIME(6) NULL; nullable `created_at`/`updated_at` DATETIME(6). Indexes support owner/status/date, service/status/date, city/status, selected-offer lookup. CHECKs enforce valid status/timestamp combinations. |
+| `offers` | `id` BIGINT UNSIGNED PK; `request_id`, `handyman_id` BIGINT UNSIGNED NOT NULL; `price` DECIMAL(12,2) NOT NULL; `currency` CHAR(3) NOT NULL DEFAULT `MAD`; `start_date`, `end_date` DATE NOT NULL; `description` TEXT NOT NULL; `status` VARCHAR(20) NOT NULL DEFAULT `pending`; `accepted_at` DATETIME(6) NULL; stored generated `accepted_request_id` BIGINT UNSIGNED NULL, equal to `request_id` only for accepted offers; nullable `created_at`/`updated_at` DATETIME(6). Unique `(request_id,id)` and generated `accepted_request_id`; indexes support request/status, handyman/status/date, currency/price. CHECKs enforce status, positive price, ordered dates, accepted timestamp. |
+| `request_photos` | `id` BIGINT UNSIGNED PK; `request_id` BIGINT UNSIGNED NOT NULL; `storage_disk` VARCHAR(50), `storage_path` VARCHAR(512) NOT NULL; `original_name` VARCHAR(255) NULL; `mime_type` VARCHAR(100), `size_bytes` BIGINT UNSIGNED, `sort_order` SMALLINT UNSIGNED NOT NULL; `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6). Unique `(storage_disk,storage_path)` and `(request_id,sort_order)`. |
+| `offer_photos` | Same file metadata and key rules as request photos, with `offer_id` as parent and unique `(offer_id,sort_order)`. |
+| `reviews` | `offer_id` BIGINT UNSIGNED PK; `rating` TINYINT UNSIGNED NOT NULL CHECK 1–5; `comment` TEXT NULL; nullable `created_at`/`updated_at` DATETIME(6). |
+| `handyman_favorites` | `homeowner_id`, `handyman_id` BIGINT UNSIGNED NOT NULL; composite PK; `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6); reverse index `(handyman_id,homeowner_id)`. |
+| `activity_events` | `id` BIGINT UNSIGNED PK; `actor_user_id` BIGINT UNSIGNED NULL; `action` VARCHAR(100), `subject_type` VARCHAR(80), `subject_id` BIGINT UNSIGNED NULL; `metadata` JSON NULL; `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6). Indexes support chronology, actor chronology, and subject chronology. Subject type/id are polymorphic and have no subject FK. |
+
+### Relationships, indexes, and deletion behavior
+
+- User has one homeowner or handyman profile depending on role; administrator has no separate profile table. Profile `user_id` is a PK and FK to `users.id`.
+- Category has many services. A service belongs to one category and can map to many skills. A handyman can map to many skills.
+- Homeowner owns many requests. A request belongs to one service and can have photos and offers. An offer belongs to one request and one handyman and can have photos and one review.
+- Composite FK `service_requests(id,accepted_offer_id)` references `offers(request_id,id)`, preventing selection of another request's offer.
+- Historical marketplace/profile/catalog relationships use RESTRICT on physical deletion. Users are anonymized/soft-deleted rather than physically removed. `activity_events.actor_user_id` uses SET NULL if physical actor deletion is ever permitted. Referenced IDs are immutable; selected profile/identity relations specify update cascade.
+- Photo storage identity is `(storage_disk,storage_path)`, not path alone; the same path may exist on separate disks. A unique parent/sort-order key prevents duplicate ordering slots.
+- No appointment, payment, chat, document, or handyman-request tables exist in v1. Password-reset tokens and sessions support authentication. Laravel cache/queue infrastructure tables remain stock framework tables and are outside the domain schema.
+- The corrective migration changes every BreIn domain/auth temporal column to `DATETIME(6)`. Framework cache/job tables retain Laravel defaults; the sessions table retains the framework's nullable indexed `user_id` without a foreign key. These are intentional infrastructure differences, not omissions from domain relationships.
+- Review `comment` is nullable by design so a rating may be submitted without text. Review `offer_id` is a primary key (therefore unique), rather than a separate surrogate ID plus unique index.
+
+### MySQL acceptance and review integrity
+
+MySQL 8.4.9 is the configured project database. The stored generated column, its unique index, and the composite selected-offer FK have been applied and tested against that server. The generated unique value rejects a second accepted offer for one request. Acceptance must additionally lock the request row and commit request/offer changes in one transaction.
+
+Review creation must lock/check the accepted offer and associated request in one transaction, verify accepted status, completed request, homeowner ownership, and absence of an existing review, then insert. The `reviews.offer_id` PK is the duplicate guard. Comment is intentionally optional; rating is required.
+
+## 11.3 Approved architecture and traceability
+
+- **Website:** Laravel/PHP, Blade, Bootstrap, HTML, CSS, and JavaScript. Responsive role-specific experiences.
+- **Database:** MySQL/InnoDB migrations, foreign keys, checks, unique constraints, and indexes.
+- **Authorization:** backend role, ownership, account-status, offer-participant, and skill-match checks; UI visibility alone is not authorization.
+- **Reusable logic:** keep state transitions/ownership out of Blade so future versioned JSON API endpoints and Flutter clients can reuse them. No marketplace API or mobile app has been built in Stage 1.
+- **File privacy:** store photo bytes on private storage; persist disk/path and metadata; authorize every read/write at the request or offer boundary.
+- **Traceability:** Section 3 IDs map report requirements to outcomes; Section 5 maps use-case groups; Section 6 preserves UML extraction; Section 7 records contradictions/resolutions; Section 11.2 records role permissions; this section is final schema authority.
+
+| Approved feature | Original report trace | Implementation state |
 |---|---|---|
-| Request creation | Homeowners alone create service requests. Handymen never create homeowner requests. | Resolves the report's conflicting handyman request use case in favor of its main workflow, homeowner UI, and request sequence. |
-| Activation | Email verification activates accounts. No 2FA. | Selects the email workflow; explicitly excludes interpreting the report's “2FA” label as a requirement. |
-| Password recovery | Forgot-password is included. | The report use-case diagram includes it; workflow details remain to be implemented safely. |
-| Reviews/ratings | Included in version one; a homeowner may review after the service is marked completed. | Repeatedly documented in report; completion-based eligibility is user-confirmed. Exact completion actor and edit policy remain open. |
-| Account moderation | Administrator can block and unblock accounts. | Report use-case/class diagram. |
-| Search | Search filters are included for services and handymen, and matching requests for handymen. Price filtering uses handyman offer prices, not a fixed service price or homeowner budget. | Filters appear in diagrams; user confirmed offer-price filtering. |
-| Likes | Homeowners can favorite/like a handyman and remove that favorite later. This is separate from reviews. | User-confirmed meaning of “likes”; review like/dislike is not adopted for v1. |
-| Communication | WhatsApp contact becomes available only after an offer is accepted. No internal chat. | Selects WhatsApp/phone contact over the in-app messaging diagram. Internal messaging, pictures/documents in chat are excluded. |
-| Administrator | Platform owner with a private dashboard to manage users, see relevant account/profile information, block/unblock users, manage catalog and skills, monitor requests/offers/reviews/activity, and view useful statistics. | Extends report's admin service/category/user/review powers with user-confirmed activity monitoring and statistics. |
-| Exclusions | No online payments, appointments/rescheduling, internal messaging, document sharing, handyman-created requests, or 2FA in v1. | Explicitly excluded by user even where report diagrams show these. Do not add unless later approved. |
-| Technology | Laravel/PHP, MySQL, HTML/CSS/JavaScript/Bootstrap. Responsive website; API-ready backend for a possible Flutter client. | User-confirmed technical foundation; the report's historical stack is consistent. |
+| Signup, activation, login/logout, forgot password | Account module, signup/login pages, use-case diagram | Implemented and feature-tested in Stage 1 |
+| Three protected roles and dashboards | Actors, account/user diagrams, confirmed requirements | Implemented; role isolation tested |
+| Admin provisioning | Admin actor and protected administration requirement | CLI command implemented and tested through dashboard access |
+| Profile fields and role records | User/Homeowner/Handyman UML | Schema implemented; profile editing pending |
+| Catalog, services, categories, skills | Service/Category/Skills UML and admin use cases | Schema implemented; admin/catalog behavior pending |
+| Requests, private location, optional photos | Demande/PictureOff UML; homeowner sequence | Schema implemented; request behavior pending |
+| Offers, currency, photos, acceptance | Offer UML and offer sequence | Schema/integrity guard implemented; offer workflows pending |
+| Completion confirmation and review eligibility | Confirmed completion/review lifecycle | Schema fields and unique review key implemented; actions pending |
+| Favorites, WhatsApp, search, admin oversight | Use cases and confirmed scope | Schema foundation as needed; features pending |
+| Excluded v1 features | Report diagrams, narrowed by user decisions | Not implemented and must remain excluded |
 
-## 11.2 Updated role-permission matrix
+## 11.4 Stage status and remaining development phases
 
-| Capability | Homeowner | Handyman | Administrator / platform owner |
-|---|---|---|---|
-| Register and verify email | Register as homeowner; verify own email | Register as handyman; verify own email | Admin account provisioned through a controlled process (proposal; no public admin signup) |
-| Authenticate | Login, logout, forgot password | Login, logout, forgot password | Protected, separate admin area; login/logout |
-| Own profile/password | View and update own profile/password | View and update own profile/password, skills | View relevant homeowner/handyman account and profile information; manage accounts as authorized |
-| Browse catalog | Browse categories/services | Browse relevant services/skills | Create, view, update, delete categories/services; manage skills |
-| Search | Filter services and handymen; use likes | Filter skill-matching homeowner requests | Search/view records as needed for administration |
-| Requests | Create, view and manage own requests; see attached request photos | View matching homeowner requests and photos; cannot create homeowner requests | Monitor platform requests; no edit/delete powers specified by user |
-| Offers | Receive, compare, accept or refuse offers on own requests | Submit offers; track own submitted offers | Monitor offers; no edit/delete powers specified by user |
-| Contact | Open WhatsApp contact for handyman after accepting an offer | Be contacted through WhatsApp after offer acceptance | No conversation access; there is no internal chat |
-| Reviews and likes | Submit reviews/ratings; use likes feature | Receive reviews/ratings; cannot review own service as an assigned capability | Monitor reviews and platform activity; specific moderation actions beyond monitoring not specified |
-| Account status | No blocking other users | No blocking other users | Block/unblock homeowners and handymen |
-| Dashboard | Homeowner dashboard focused on own requests/offers/profile | Handyman dashboard focused on matching requests, own offers, profile/skills/reviews | Private control panel with user management, catalog/skill management, activity monitoring, and useful statistics |
+### Stage 1 — Foundation, approved schema, and authentication: complete
 
-**Authorization invariant:** All role, ownership, and account-status checks must execute on the server. Homeowners can access only their own private requests/offers/profile; handymen can access only their own profile/offers and requests allowed by skill matching and product rules; blocked accounts cannot use protected marketplace actions; administrative routes/data require the administrator role. These are user-confirmed security requirements, not just interface behavior.
+- Laravel 13/PHP backend, MySQL 8.4.9 configuration, Bootstrap/Vite frontend foundation.
+- Approved schema migrations applied to development and testing databases.
+- Three roles, homeowner/handyman registration, email verification, role-specific login, logout, forgot-password/reset, protected dashboards, active-account enforcement, and CLI administrator provisioning.
+- Account identity rules are enforced by DB constraints. Local mail transport is `log`; real SMTP/provider delivery is not configured.
+- Corrective consistency migration applied: domain/auth timestamps are DATETIME(6); request/offer photo uniqueness is disk-scoped.
+- MySQL generated-column/unique-index/composite-FK compatibility and authentication paths have MySQL-backed tests.
 
-## 11.3 Proposed relational schema (review draft; no migrations created)
+### Remaining phases — not started
 
-This schema reconciles the class diagram with the confirmed workflows. Names are proposed English equivalents for report names. It preserves the UML's business entities while using relational structures suitable for MySQL. Final field constraints, status values, deletion policy, and exact like/search semantics require review.
+1. **Stage 2: Account and administrator operations.** Owner profile/password management and account closure/anonymization; admin user/profile lookup, block/unblock, category/service/skill management, persisted activity monitoring, and an agreed set of DB-derived statistics.
+2. **Stage 3: Catalog and discovery.** Browse/search categories/services/handymen, offer-price filters, homeowner favorites, and skill-matched handyman request filters.
+3. **Stage 4: Requests and offers.** Homeowner request create/edit/cancel and photos; handyman discovery/details, offer submission/tracking/photos; homeowner offer comparison/accept/refuse with transaction and locking.
+4. **Stage 5: Completion and feedback.** Handyman completion marker, homeowner confirmation, review eligibility/creation, ratings, and authorized WhatsApp access after acceptance.
+5. **Stage 6: Public pages, API readiness, and release checks.** About Us, Contact Us after defining recipient/retention, responsive/accessibility/security review, reusable versioned API design, and deployment readiness. Flutter remains future scope.
 
-| Proposed table | Key fields / purpose | Relationships and traceability |
-|---|---|---|
-| `users` | `id`, role (`homeowner`/`handyman`/`admin`), name fields, username, email, password hash, phone, email-verified timestamp, account status (`active`/`blocked` etc.) | Shared identity for report `User`, with role and verified/blocked state needed by confirmed auth/admin workflows. Do not store plaintext passwords. Whether Admin uses same table is a technical proposal. |
-| `homeowner_profiles` | `user_id`, address, city, optional geolocation fields | One-to-one with user; report `Homeowner`. Owns many service requests. |
-| `handyman_profiles` | `user_id`, address, city, optional picture and report profile fields | One-to-one with user; report `Handyman`. Has skills and receives offers/reviews. Report fields such as CIN, marital status, birthday, gender and geolocation are not automatically required; confirm collection/visibility first. |
-| `categories` | `id`, name | Report `Category`; one category has many services. |
-| `services` | `id`, `category_id`, name, description | Report `Service`; belongs to a category; referenced by requests. No service price or homeowner budget field is proposed: the confirmed price filter uses prices stored on `offers`. |
-| `skills` | `id`, name, description | Report `Skills`; administrator manages. |
-| `handyman_skill` | `handyman_id`, `skill_id` | Many-to-many between handyman profiles and skills, as UML indicates; supports skill-matched request visibility. |
-| `service_skill` | `service_id`, `skill_id` | Proposed mapping to express which skills qualify for a service. UML lines suggest service-skill association, but exact mapping/cardinality should be confirmed. |
-| `service_requests` | `id`, `homeowner_id`, `service_id`, title, description, location/address, city, desired start date, status, created/updated timestamps | Report `Demande`; belongs to one homeowner and one service; has optional photo attachments and zero or more offers. Statuses need approval. Only homeowners can create. |
-| `request_photos` | `id`, `request_id`, private file key/path, metadata | Represents optional photos in request sequence / `PictureOff`. Private access controlled by request ownership and eligible handyman access. |
-| `offers` | `id`, `request_id`, `handyman_id`, price, start date, end date, description, status, timestamps | Report `Offer`; one request has zero or more offers; each offer belongs to one request and one handyman. Homeowner accepts/refuses; handyman tracks own offers. This is the sequence diagram's create-offer flow. |
-| `offer_photos` | `id`, `offer_id`, private file key/path, metadata | Optional offer pictures from offer sequence / picture UML. |
-| `reviews` | `id`, `offer_id`, `homeowner_id`, `handyman_id`, rating, comment, timestamps | Report `Reviews`; proposed one review per eligible accepted/completed offer pending eligibility decision; administrator can monitor. Link to offer establishes context and ownership. |
-| `handyman_favorites` | `id` (or composite key), `homeowner_id`, `handyman_id`, `created_at` | Approved meaning: a homeowner favorites a handyman. Enforce one favorite per homeowner/handyman pair with a unique constraint; allow removal (unfavorite). This is separate from reviews. Do not implement review likes/dislikes in v1. |
-| Admin activity log | Candidate actor, action, record type/id, timestamp | Proposed only if “monitoring platform activity” means an auditable event history. Clarify what activity is visible, retention, and privacy before creating. |
+No Stage 2 or marketplace feature implementation has begun. Test each module before proceeding.
 
-### Relationship summary
+## 11.5 Remaining implementation detail
 
-- User has one role-specific profile; Homeowner → many Requests; Handyman ↔ many Skills.
-- Category → many Services; Service → many Requests.
-- Request → many Photos and many Offers; each Offer → one Handyman and one Request.
-- Offer → many optional photos and zero/one Review (proposed cardinality; confirm review policy).
-- Admin manages users, categories, services, and skills and monitors requests, offers, reviews, and activity.
-- No tables for appointments, internal messages, document sharing, or payments in v1, because those are expressly excluded.
+These details do not reopen the approved schema or v1 scope:
 
-**File-storage proposal:** Put photo bytes in private file/object storage and store only authorized file references/metadata in MySQL. The backend must authorize every upload/download. Exact hosting and storage provider are not selected here.
-
-## 11.4 Proposed application architecture
-
-The following is a proposal for review, not a locked architectural decision.
-
-- **Web presentation:** Laravel-rendered pages using Blade and Bootstrap for the first website; JavaScript for interactive behavior where needed. Keep role-specific page shells/navigation simple and responsive.
-- **Application/business layer:** Laravel controllers handle HTTP concerns; request validation, authorization policies, and service/action classes enforce marketplace workflows (registration, activation, request creation, offer submission/decision, reviews, likes, admin catalog/user actions). Keep business rules out of templates.
-- **Persistence:** MySQL with migrations, Eloquent models, foreign keys, indexes for owner/status/service/skill search, and explicit relationship constraints. Build only after schema and open decisions are approved.
-- **Authentication/security:** Laravel authentication with email verification and forgot-password flow; hashed passwords, CSRF protection for web forms, rate limits for login/reset, server validation, and policy checks for role, record ownership, matching, and blocked status. Admin account provisioning and password recovery follow protected operations.
-- **API readiness:** Put reusable workflows behind application services and expose a documented, versioned JSON API (for example `/api/v1`) alongside web routes. Keep the same validation, authorization, and business rules for web and future Flutter clients. Choose a token/session strategy when deciding the API architecture; do not duplicate marketplace logic in a mobile-specific layer.
-- **WhatsApp:** After acceptance, present an authorized WhatsApp link/action using the handyman contact number. Do not persist internal conversation messages or expose unrelated users' private numbers. Confirm number visibility and exact link behavior before finalizing.
-- **Admin dashboard:** Protected admin routes and policies; focused user lookup/blocking, catalog/skill management, request/offer/review monitoring, and agreed summary statistics. “Useful statistics” requires an approved metric list; no fabricated analytics.
-
-## 11.5 Requirement-to-implementation traceability
-
-| Confirmed requirement | Report source | Planned module/feature | Verification evidence during implementation |
-|---|---|---|---|
-| Homeowner/handyman registration, email verification, login/logout, profile/password | Account module, signup/login descriptions, User UML | Authentication and profile module | Registration/verification/recovery flows work; wrong role and unverified/blocked access rejected server-side |
-| Forgot password | Use-case diagram | Auth recovery flow | Recovery request and token flow work without exposing account existence |
-| Categories/services browse/search | Brief, service page, use case, Category/Service UML | Catalog and discovery | Search returns matching catalog data; admin changes reflected |
-| Homeowner request with description/location/date/photos | Brief, request page, sequence | Request module | Request persists with selected service; optional photos upload/access checks work |
-| Homeowner-only request creation | Confirmed decision; report primary flow | Request authorization | Handyman cannot create through UI or direct HTTP/API request |
-| Skill-matched handyman request discovery and filters | Brief; use case; handyman actor text | Matching/search module | Handyman sees only eligible records; filters operate on allowed set |
-| Offer with price/dates/description/photos | Brief, offer sequence, Offer UML | Offer module | Offer persists against eligible request and is visible to owner and submitting handyman only |
-| Compare/accept/refuse offers; track submitted offers | Brief, dashboard, confirmed requirements | Offer decision/dashboard module | Owner can decide only on own request; handyman sees own offers; state transitions enforced |
-| WhatsApp after accepted offer | Brief and homeowner use case; confirmed channel | Contact action | WhatsApp action appears only for accepted offer and authorized participants |
-| Reviews/ratings and likes | Brief, use-case and Reviews UML; confirmed likes | Feedback module | Eligibility, ownership, one-like/rating rules validated after decisions; admin can monitor reviews |
-| Admin user/profile view and block/unblock | Admin use-case/class UML | User administration | Admin-only controls; blocked account is denied protected actions; audit expectations confirmed |
-| Admin category/service/skill management | Brief, Admin UML | Catalog/skill admin | Create/edit/delete behavior and referential constraints work |
-| Admin monitor requests/offers/reviews/activity and statistics | Confirmed user requirements | Admin oversight dashboard | Approved data and metrics are derived from persisted records, not static placeholders |
-| Responsive website and Flutter-ready backend | Brief and confirmed technical foundation | Shared layout + application/API layers | Responsive pages; web/API operations reuse same policy and business services |
-| Excluded v1 features | User-confirmed exclusions | No v1 modules/routes/tables | No payment, appointments, internal chat, document sharing, handyman-created requests, or 2FA workflows shipped |
-
-## 11.6 Proposed implementation phases
-
-No phase begins until this plan is approved. Each phase includes functional checks before proceeding, consistent with the user's requested incremental development and the report's V-model emphasis.
-
-1. **Specification and design approval:** Resolve open product rules below; approve relationships, statuses, search behavior, admin metrics, and privacy rules. Produce final schema/API/role-policy design.
-2. **Foundation and authentication:** Laravel project setup, MySQL configuration, shared user/role foundation, registration, email verification, login/logout, forgot password, protected role routes, authorization policies, and base responsive layout.
-3. **Administrator foundation:** Private admin dashboard; user/profile lookup and block/unblock; category, service, and skill management. Include operational activity view and approved baseline statistics only.
-4. **Catalog and discovery:** Public/authenticated catalog behavior as approved; homeowner service/handyman search filters; handyman skill matching and request filters; server-side scoping.
-5. **Homeowner requests and handyman offers:** Request creation and photos; handyman matching list/details; offer submission/photos; homeowner request/offers dashboard; compare and accept/refuse; handyman submitted-offer tracking.
-6. **WhatsApp and feedback:** Authorized post-acceptance WhatsApp contact; reviews/ratings; likes behavior; admin review monitoring.
-7. **Completion and release readiness:** About Us/Contact Us behavior, accessibility/responsive pass, security/privacy review, API documentation, end-to-end acceptance checks, deployment configuration, and final defect fixes.
-
-## 11.7 Confirmed refinements and remaining decisions
-
-The following four product decisions are now confirmed and supersede any earlier open wording:
-
-1. **Likes mean favorites.** A homeowner can favorite a handyman and later remove that favorite. This is a separate relationship from reviews. Review likes/dislikes are not part of v1.
-2. **Price filtering uses offer prices.** Search/filter results use prices submitted by handymen in `offers`. Do not add a fixed service price or homeowner request-budget field for this feature unless separately approved.
-3. **Review eligibility is completion-based.** A homeowner may review only after the service is marked completed. The exact actor/action that marks completion, and whether reviews can be edited or deleted, still need a rule.
-4. **WhatsApp is available after acceptance only.** The handyman's WhatsApp contact action/number is revealed to the homeowner only after that homeowner accepts an offer for the request. No internal messages are stored.
-
-### Decisions that genuinely affect the database design
-
-These are the remaining items to settle before migrations. The specification can continue at the conceptual level, but final columns, constraints, and foreign-key/delete behavior depend on them.
-
-1. **Offer lifecycle and acceptance rule:** Confirm the exact offer statuses and allowed transitions; whether a homeowner can accept only one offer per request; and whether other pending offers are automatically closed when one is accepted. This determines status values, transaction rules, and how request/offer state is represented.
-2. **Completion and review lifecycle:** Confirm who marks a service completed (homeowner, handyman, or both/confirmation), and whether one review per accepted offer is allowed. Completion determines when a review row becomes valid and which state transition authorizes it.
-3. **Request lifecycle:** Confirm whether homeowners can edit or cancel requests, and what happens to a request after an offer is accepted or work is completed. This affects request status values and whether records can be deleted or must be retained.
-4. **Profile fields and privacy:** Approve the actual fields to collect and which are public/private. In particular, decide whether CIN, birthday, gender, marital status, exact address/geolocation, and username are needed. This determines columns, nullability, and what information can be exposed in search/profile APIs.
-5. **Service-to-skill mapping:** Confirm whether each service is associated with one or more required skills and whether a handyman may hold multiple skills. The proposed `service_skill` and `handyman_skill` relationships depend on this matching rule.
-6. **Account deletion and blocked-account behavior:** Confirm whether users can permanently delete their accounts, or whether deactivation/anonymization is required to preserve requests, offers, and reviews. Also specify what blocked users can still access. This affects foreign-key deletion policies, retention, and authorization.
-
-### Remaining choices that do not block the core schema
-
-These can be decided during implementation planning or before the relevant module, without holding up the core marketplace schema:
-
-- **Admin statistics:** Start with database-derived counts for homeowners, handymen, requests, offers, reviews, and blocked accounts, with a selectable time period for activity where useful. Confirm the exact dashboard presentation later.
-- **Admin activity history:** The admin can monitor current platform records. A separate audit-log table is only needed if you want a durable history of who changed what and when; decide the event list and retention before adding it.
-- **Admin provisioning:** Use a controlled, non-public process to create the initial administrator account. This is an operational setup decision, not a marketplace schema blocker.
-- **Contact Us:** Decide recipient and notification handling before building the contact workflow. A stored contact-message table is needed only if messages are to be retained in BreIn.
-- **Photo limits:** File formats, size/count limits and retention can be set before implementing uploads; they do not materially change the core entity relationships.
-- **WhatsApp link format:** Whether the link opens a plain chat or includes a prefilled message can be decided during UI implementation. The access rule is already fixed: only after acceptance.
-
-## 11.8 Approval gate
-
-The four product decisions above are incorporated. Before creating migrations, settle the six database-impacting decisions in Section 11.7: offer lifecycle/one-acceptance rule, completion/review lifecycle, request lifecycle, profile fields/privacy, service-to-skill mapping, and account deletion/block behavior. The remaining non-blocking choices can be finalized in their respective implementation phases. The schema, architecture, and seven phases remain proposals until approved. No source code, migrations, database tables, application pages, or tests have been created or run.
+- Contact Us recipient, persistence/retention, and response path.
+- Admin statistics to display and review moderation actions beyond monitoring.
+- Photo formats, size/count limits, and storage provider.
+- Detailed rating aggregation and handyman ranking/filter semantics.
+- Exact profile/address visibility screens within the approved privacy boundary.
+- Versioned API contract and token/session strategy for a future Flutter client.
+- Production SMTP/provider credentials and deployment configuration.

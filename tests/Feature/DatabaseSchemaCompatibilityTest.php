@@ -44,6 +44,75 @@ class DatabaseSchemaCompatibilityTest extends TestCase
         $this->assertSame('offers', $foreignKeyColumns[0]->REFERENCED_TABLE_NAME);
     }
 
+    public function test_business_timestamps_use_datetime6_and_photo_paths_are_disk_scoped(): void
+    {
+        $timestamps = DB::select(
+            'SELECT DATA_TYPE, DATETIME_PRECISION FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) AND DATA_TYPE IN (?, ?) ',
+            [
+                'users', 'password_reset_tokens', 'categories', 'services', 'skills', 'handyman_skill',
+                'service_requests', 'offers', 'request_photos', 'offer_photos', 'reviews',
+                'handyman_favorites', 'activity_events', 'timestamp', 'datetime',
+            ],
+        );
+
+        $this->assertCount(27, $timestamps);
+        foreach ($timestamps as $timestamp) {
+            $this->assertSame('datetime', $timestamp->DATA_TYPE);
+            $this->assertSame(6, (int) $timestamp->DATETIME_PRECISION);
+        }
+
+        foreach (['request_photos' => 'request_photos_disk_path_unique', 'offer_photos' => 'offer_photos_disk_path_unique'] as $table => $indexName) {
+            $indexColumns = DB::select(
+                'SELECT COLUMN_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ? ORDER BY SEQ_IN_INDEX',
+                [$table, $indexName],
+            );
+
+            $this->assertSame(['storage_disk', 'storage_path'], array_map(
+                static fn (object $column): string => $column->COLUMN_NAME,
+                $indexColumns,
+            ));
+        }
+
+        $comment = DB::selectOne(
+            'SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            ['reviews', 'comment'],
+        );
+
+        $this->assertSame('YES', $comment->IS_NULLABLE);
+    }
+
+    public function test_photo_paths_may_repeat_across_disks_but_not_on_the_same_disk(): void
+    {
+        [$homeownerId, , , $serviceId] = $this->createMarketplaceFixture();
+        $firstRequestId = $this->createRequest($homeownerId, $serviceId);
+        $secondRequestId = $this->createRequest($homeownerId, $serviceId);
+        $thirdRequestId = $this->createRequest($homeownerId, $serviceId);
+        $sharedPath = 'requests/shared-image.jpg';
+
+        foreach ([[$firstRequestId, 'local'], [$secondRequestId, 's3']] as [$requestId, $disk]) {
+            DB::table('request_photos')->insert([
+                'request_id' => $requestId,
+                'storage_disk' => $disk,
+                'storage_path' => $sharedPath,
+                'mime_type' => 'image/jpeg',
+                'size_bytes' => 1024,
+                'sort_order' => 0,
+                'created_at' => now(),
+            ]);
+        }
+
+        $this->expectException(QueryException::class);
+        DB::table('request_photos')->insert([
+            'request_id' => $thirdRequestId,
+            'storage_disk' => 'local',
+            'storage_path' => $sharedPath,
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 1024,
+            'sort_order' => 0,
+            'created_at' => now(),
+        ]);
+    }
+
     public function test_mysql_rejects_a_second_accepted_offer_for_the_same_request(): void
     {
         [$homeownerId, $handymanOneId, $handymanTwoId, $serviceId] = $this->createMarketplaceFixture();

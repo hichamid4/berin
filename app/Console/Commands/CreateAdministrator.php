@@ -7,6 +7,7 @@ use App\UserRole;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 #[Signature('app:create-administrator')]
@@ -44,13 +45,17 @@ class CreateAdministrator extends Command
             return self::FAILURE;
         }
 
-        $user = User::create([
-            ...$data,
-            'role' => UserRole::Administrator,
-            'password' => $password,
-            'email_verified_at' => now(),
-            'status' => 'active',
-        ]);
+        $user = DB::transaction(function () use ($data, $password): User {
+            $user = User::create([
+                ...$data,
+                'role' => UserRole::Administrator,
+                'password' => $password,
+            ]);
+
+            $user->forceFill(['email_verified_at' => now()])->save();
+
+            return $user;
+        });
 
         $this->info("Administrator account created (user ID {$user->id}).");
 
