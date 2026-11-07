@@ -1,0 +1,15 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+:root {
+    --bs-success: #16845b;
+    --bs-success-rgb: 22, 132, 91;
+    font-synthesis: none;
+}
+
+body {
+    min-height: 100vh;
+}
+
+a {
+    text-underline-offset: 0.16em;
+}
