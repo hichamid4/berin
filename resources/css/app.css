@@ -473,6 +473,29 @@ a {
     box-shadow: var(--brein-shadow);
 }
 
+/* Contact form --------------------------------------------------------------- */
+
+/* Spam trap: moved off-screen (not display:none, which some bots skip) and hidden from assistive technology. */
+.contact-trap {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.contact-sent-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    font-size: 2rem;
+    color: #fff;
+    background: var(--brein-primary);
+}
+
 /* Dashboards for homeowners and handymen ------------------------------------ */
 
 .dashboard-shell {

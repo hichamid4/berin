@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\ContactMessageStatus;
+use App\Http\Requests\StoreContactMessageRequest;
+use App\Models\ContactMessage;
+use Closure;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -10,8 +14,10 @@ use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\View\View as BladeView;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,7 +43,38 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($email.'|'.$request->ip());
         });
 
+        $this->limitContactMessages();
+        $this->shareUnreadContactMessageCount();
         $this->brandAuthenticationEmails();
+    }
+
+    /**
+     * Contact Us accepts a few messages per visitor per minute and per day. A throttled visitor
+     * is sent back to the form with their text kept and an explanation instead of a bare 429 page.
+     */
+    private function limitContactMessages(): void
+    {
+        RateLimiter::for('contact', function (Request $request): array {
+            $tooMany = fn (string $period): Closure => fn (Request $request, array $headers) => back()
+                ->withInput($request->except(StoreContactMessageRequest::HONEYPOT_FIELD))
+                ->withErrors(['message' => "You have sent several messages {$period}. Please wait a little before sending another one."])
+                ->withHeaders($headers);
+
+            return [
+                Limit::perMinute(3)->by('contact-minute|'.$request->ip())->response($tooMany('in the last minute')),
+                Limit::perDay(10)->by('contact-day|'.$request->ip())->response($tooMany('today')),
+            ];
+        });
+    }
+
+    /**
+     * Give the administrator sidebar the number of contact messages nobody has opened yet.
+     */
+    private function shareUnreadContactMessageCount(): void
+    {
+        View::composer('layouts.admin', function (BladeView $view): void {
+            $view->with('newContactMessageCount', ContactMessage::query()->where('status', ContactMessageStatus::New)->count());
+        });
     }
 
     /**

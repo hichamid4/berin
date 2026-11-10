@@ -66,6 +66,8 @@
                     <li class="nav-item"><a href="{{ route('admin.requests.index') }}" class="nav-link {{ request()->routeIs('admin.requests.*') ? 'active' : '' }}"><i class="nav-icon bi bi-clipboard-check"></i><p>Requests</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.offers.index') }}" class="nav-link {{ request()->routeIs('admin.offers.*') ? 'active' : '' }}"><i class="nav-icon bi bi-cash-stack"></i><p>Offers</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.reviews.index') }}" class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}"><i class="nav-icon bi bi-star"></i><p>Reviews</p></a></li>
+                    <li class="nav-header">Support</li>
+                    <li class="nav-item"><a href="{{ route('admin.contact-messages.index') }}" class="nav-link {{ request()->routeIs('admin.contact-messages.*') ? 'active' : '' }}"><i class="nav-icon bi bi-envelope-paper"></i><p>Contact messages @if ($newContactMessageCount > 0)<span class="nav-badge badge text-bg-warning ms-auto">{{ $newContactMessageCount }}<span class="visually-hidden"> new</span></span>@endif</p></a></li>
                     <li class="nav-header">Account</li>
                     <li class="nav-item"><a href="{{ route('account.edit') }}" class="nav-link {{ request()->routeIs('account.*') ? 'active' : '' }}"><i class="nav-icon bi bi-person-gear"></i><p>My account</p></a></li>
                 </ul>

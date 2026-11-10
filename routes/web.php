@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin\ActivityEventController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ContactMessageController as AdminContactMessageController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OfferController as AdminOfferController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\Handyman\DashboardController as HandymanDashboardController;
 use App\Http\Controllers\Handyman\OfferController;
 use App\Http\Controllers\Handyman\RequestBrowserController;
@@ -36,7 +38,8 @@ Route::get('/handymen', [HandymanDirectoryController::class, 'index'])->name('ha
 Route::get('/handymen/{handyman}', [HandymanDirectoryController::class, 'show'])->name('handymen.show');
 Route::get('/handymen/{handyman}/photo', [PhotoController::class, 'handymanPhoto'])->name('handymen.photo');
 Route::view('/about', 'pages.about')->name('about');
-Route::view('/contact', 'pages.contact')->name('contact');
+Route::get('/contact', [ContactMessageController::class, 'create'])->name('contact');
+Route::post('/contact', [ContactMessageController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
 Route::middleware('guest')->group(function (): void {
@@ -124,5 +127,9 @@ Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
         Route::get('/offers', [AdminOfferController::class, 'index'])->name('offers.index');
         Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
         Route::get('/activity', [ActivityEventController::class, 'index'])->name('activity.index');
+
+        Route::get('/contact-messages', [AdminContactMessageController::class, 'index'])->name('contact-messages.index');
+        Route::get('/contact-messages/{contactMessage}', [AdminContactMessageController::class, 'show'])->name('contact-messages.show');
+        Route::patch('/contact-messages/{contactMessage}/status', [AdminContactMessageController::class, 'updateStatus'])->name('contact-messages.status');
     });
 });

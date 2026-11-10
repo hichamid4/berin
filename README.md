@@ -59,6 +59,10 @@ Verification links are signed and expire after 60 minutes. They work even if ope
 
 Passwords must be at least 8 characters. Homeowners and handymen must give a phone number in international format (Moroccan numbers may be typed as `06…`); it is used for WhatsApp contact after an offer is accepted. Role and active-account checks run on protected server routes. Administrator accounts cannot be self-registered from the website.
 
+## Contact Us messages
+
+The public `/contact` form stores messages in the `contact_messages` table; nothing is emailed. Administrators handle them under **Admin → Contact messages** (`/admin/contact-messages`). From there they can search, filter by status, open a message, mark it new, read or resolved, and reply from their own email app. Submissions are limited to 3 per minute and 10 per day per IP address. A hidden honeypot field and a 10-minute duplicate check stop spam and double submissions. Messages are never deleted automatically; the retention period is still an open decision (see Section 11.6 of the functional specification).
+
 ## Checks
 
 - PHP formatting: `vendor/bin/pint --dirty`

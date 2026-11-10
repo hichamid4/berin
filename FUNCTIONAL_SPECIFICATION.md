@@ -100,7 +100,7 @@ IDs below are assigned for traceability; they are not identifiers from the repor
 | ADM-06 | Administrator can manage skills. | Brief | Explicit; skill CRUD operations not enumerated |
 | ADM-07 | Administrator can monitor reviews. | Brief | Explicit; moderation operations unspecified |
 | PUB-01 | The site provides About Us information. | Realization chapter/page screenshot | Explicit page; content requirements unspecified |
-| PUB-02 | A user can send a message through Contact Us. | Realization chapter/page description | Explicit; recipient, storage, and response workflow unspecified |
+| PUB-02 | A user can send a message through Contact Us. | Realization chapter/page description | Implemented: messages are stored in the database and handled by administrators in the dashboard (Section 11.6); retention period still to be decided |
 | UX-01 | Web application is responsive and provides a fluid, usable experience. | Project brief | Explicit quality requirement |
 
 ## 4. Role-permission matrix
@@ -127,7 +127,8 @@ Permissions below reflect the report as reconciled with the user's confirmed dec
 | Favorite/like handyman | Yes; add/remove favorite | No | No |
 | Manage users/block/unblock | No | No | Yes |
 | Manage categories/services/skills | No | No | Yes |
-| About Us / Contact Us | Public information/contact page | Public information/contact page | Public information/contact page |
+| About Us / Contact Us | Public information page; send a contact message (guests too) | Same | Same |
+| Read and handle contact messages | No; cannot see any message, including their own | No | Yes: list, search, filter, view, mark new/read/resolved |
 
 **Authorization rule [Decision]:** Scope private records to their owner and enforce role and ownership checks on the server. Homeowners may access only their own requests/offers/profile and service locations; handymen may access only skill-matched requests and their own offers/profile; only administrators may access the administration area. The Stage 1 role boundary is implemented; marketplace ownership checks are pending with their modules.
 
@@ -221,7 +222,7 @@ The following list preserves the original report analysis. User-confirmed resolu
 | 12. Likes/dislikes | Resolved: homeowner favorite of a handyman, separate from review; review like/dislike excluded. Rating is 1–5; comment optional. |
 | 13. Pictures | Resolved: separate private request/offer photo tables, each keyed by `(storage_disk, storage_path)` and ordered per parent. No chat or document attachments. |
 | 14. Messages | Resolved: no internal messages. |
-| 15. Contact Us | Still pending: recipient, retention, and response workflow must be decided before implementing the form. |
+| 15. Contact Us | Resolved for v1: messages are stored in the database and handled by administrators in the dashboard; administrators reply from their own email client. No email, SMS or third-party service is involved. Retention period remains an outstanding decision (Section 11.6). |
 | 16. Account deletion/password reset | Resolved: forgot-password included; closure anonymizes and soft-deletes the account while retaining historical foreign keys. Password reset, verification, and authentication reject anonymized users. |
 | 17. Offer dates and price | Resolved: offer has positive decimal price in MAD, start date, end date, and description; end date cannot precede start date. Editing/withdrawal restrictions are enforced with offer transitions in its module. |
 | 18. Geographic matching | Resolved default: use city/location text filters, not coordinate/distance matching. Exact service location remains private and is exposed only to authorized participants. |
@@ -230,11 +231,11 @@ The following list preserves the original report analysis. User-confirmed resolu
 
 ### Confirmed v1 functionality
 
-These are report requirements and/or user-confirmed v1 behavior: responsive website; homeowner/handyman registration and email verification; email/password login, logout, and forgot-password; profile/password management; catalog and filters; homeowner-only requests with private location and optional photos; skill-matched handyman discovery; offers with optional photos; homeowner offer choice; WhatsApp after acceptance; completion confirmation; eligible rating/review; removable homeowner favorites; admin account blocking and platform content/user management. Stage 1 implementation status is enumerated in Section 11.6; other approved items remain pending.
+These are report requirements and/or user-confirmed v1 behavior: responsive website; homeowner/handyman registration and email verification; email/password login, logout, and forgot-password; profile/password management; catalog and filters; homeowner-only requests with private location and optional photos; skill-matched handyman discovery; offers with optional photos; homeowner offer choice; WhatsApp after acceptance; completion confirmation; eligible rating/review; removable homeowner favorites; admin account blocking and platform content/user management; Contact Us messages handled by administrators. Stage 1 implementation status is enumerated in Section 11.4 and the Contact Us workflow in Section 11.6; other approved items remain pending.
 
 ### Report features explicitly excluded from v1 or requiring detail before their later implementation
 
-The report still supplies traceability for true 2FA, handyman-created requests/direct request acceptance, internal messaging/media/documents, appointment scheduling, and cash/card/PayPal payments; each is explicitly excluded from v1. Review like/dislike is excluded in favor of a separate homeowner favorite. Contact Us handling, admin review moderation beyond monitoring, precise rating/handyman ranking semantics, optional profile updates, and a few page-content details are pending their respective implementation phase. These are not silently treated as shipped functionality.
+The report still supplies traceability for true 2FA, handyman-created requests/direct request acceptance, internal messaging/media/documents, appointment scheduling, and cash/card/PayPal payments; each is explicitly excluded from v1. Review like/dislike is excluded in favor of a separate homeowner favorite. Contact Us message retention, admin review moderation beyond monitoring, precise rating/handyman ranking semantics, optional profile updates, and a few page-content details are pending their respective implementation phase. These are not silently treated as shipped functionality.
 
 ## 9. Approved v1 implementation scope
 
@@ -249,7 +250,7 @@ This is the approved scope, based on the report and the user's confirmed decisio
 5. Catalog, homeowner service/handyman search, handyman skill matching, and request filters.
 6. Homeowner requests/photos, handyman offers/photos and tracking, homeowner comparison/acceptance, and confirmed completion.
 7. Authorized post-acceptance WhatsApp, eligible reviews/ratings, and homeowner favorites.
-8. About Us and Contact Us; Contact Us retention and recipient must be decided before that module.
+8. About Us and Contact Us. Contact Us messages are stored and handled by administrators in the dashboard (Section 11.6); the retention period is still to be decided.
 9. Responsive UI and backend organization that allows a later versioned API/Flutter client to reuse business rules. No mobile app is part of v1.
 
 ### Explicitly excluded from v1
@@ -262,7 +263,7 @@ True 2FA; handyman-created homeowner requests and direct request acceptance; int
 
 The following product/schema decisions are already approved and must not be reopened as if undecided: request creator; email verification vs 2FA; v1 feature exclusions; WhatsApp channel; review eligibility and uniqueness; rating/comment shape; favorite semantics; profile-field default; request/offer/completion lifecycle; skill mapping; anonymization and blocked-account behavior; MAD currency; MySQL concurrency guard; and photo storage-key uniqueness.
 
-- Contact Us recipient, persistence/retention, and response path before implementing its form.
+- Contact Us message retention period and who may delete messages (no automatic deletion exists; see Section 11.6).
 - The initial set of statistics and presentation details for the admin panel; all displayed metrics must be derived from stored records.
 - Admin review moderation actions beyond monitoring, if later required.
 - Exact supported image formats, upload size/count limits, and storage provider before implementing uploads.
@@ -322,6 +323,7 @@ All domain tables use InnoDB. IDs and corresponding foreign keys are unsigned an
 | `reviews` | `offer_id` BIGINT UNSIGNED PK; `rating` TINYINT UNSIGNED NOT NULL CHECK 1–5; `comment` TEXT NULL; nullable `created_at`/`updated_at` DATETIME(6). |
 | `handyman_favorites` | `homeowner_id`, `handyman_id` BIGINT UNSIGNED NOT NULL; composite PK; `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6); reverse index `(handyman_id,homeowner_id)`. |
 | `activity_events` | `id` BIGINT UNSIGNED PK; `actor_user_id` BIGINT UNSIGNED NULL; `action` VARCHAR(100), `subject_type` VARCHAR(80), `subject_id` BIGINT UNSIGNED NULL; `metadata` JSON NULL; `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6). Indexes support chronology, actor chronology, and subject chronology. Subject type/id are polymorphic and have no subject FK. |
+| `contact_messages` | `id` BIGINT UNSIGNED PK; `name` VARCHAR(100), `email` VARCHAR(254), `subject` VARCHAR(150), `message` TEXT NOT NULL; `status` VARCHAR(20) NOT NULL DEFAULT `new`; `read_at`, `resolved_at` DATETIME(6) NULL; `handled_by` BIGINT UNSIGNED NULL FK to `users.id` (SET NULL on delete, CASCADE on update); nullable `created_at`/`updated_at` DATETIME(6). Indexes `(status,created_at)` and `created_at`. CHECKs restrict status to `new`/`read`/`resolved`, require `resolved_at` exactly when resolved, and require `read_at` unless new. No IP address, user agent or account link is stored. Added by a forward-only migration with no `down()`. |
 
 ### Relationships, indexes, and deletion behavior
 
@@ -361,6 +363,7 @@ Review creation must lock/check the accepted offer and associated request in one
 | Offers, currency, photos, acceptance | Offer UML and offer sequence | Schema/integrity guard implemented; offer workflows pending |
 | Completion confirmation and review eligibility | Confirmed completion/review lifecycle | Schema fields and unique review key implemented; actions pending |
 | Favorites, WhatsApp, search, admin oversight | Use cases and confirmed scope | Schema foundation as needed; features pending |
+| Contact Us messages and admin handling | PUB-02, Contact Us page | Implemented and feature-tested (Section 11.6); retention decision outstanding |
 | Excluded v1 features | Report diagrams, narrowed by user decisions | Not implemented and must remain excluded |
 
 ## 11.4 Stage status and remaining development phases
@@ -380,7 +383,7 @@ Review creation must lock/check the accepted offer and associated request in one
 2. **Stage 3: Catalog and discovery.** Browse/search categories/services/handymen, offer-price filters, homeowner favorites, and skill-matched handyman request filters.
 3. **Stage 4: Requests and offers.** Homeowner request create/edit/cancel and photos; handyman discovery/details, offer submission/tracking/photos; homeowner offer comparison/accept/refuse with transaction and locking.
 4. **Stage 5: Completion and feedback.** Handyman completion marker, homeowner confirmation, review eligibility/creation, ratings, and authorized WhatsApp access after acceptance.
-5. **Stage 6: Public pages, API readiness, and release checks.** About Us, Contact Us after defining recipient/retention, responsive/accessibility/security review, reusable versioned API design, and deployment readiness. Flutter remains future scope.
+5. **Stage 6: Public pages, API readiness, and release checks.** About Us; Contact Us (implemented, Section 11.6, apart from the retention decision); responsive/accessibility/security review, reusable versioned API design, and deployment readiness. Flutter remains future scope.
 
 No Stage 2 or marketplace feature implementation has begun. Test each module before proceeding.
 
@@ -388,10 +391,45 @@ No Stage 2 or marketplace feature implementation has begun. Test each module bef
 
 These details do not reopen the approved schema or v1 scope:
 
-- Contact Us recipient, persistence/retention, and response path.
+- Contact Us message retention period and deletion responsibility (outstanding; see Section 11.6).
 - Admin statistics to display and review moderation actions beyond monitoring.
 - Photo formats, size/count limits, and storage provider.
 - Detailed rating aggregation and handyman ranking/filter semantics.
 - Exact profile/address visibility screens within the approved privacy boundary.
 - Versioned API contract and token/session strategy for a future Flutter client.
 - Production SMTP/provider credentials and deployment configuration.
+
+## 11.6 Contact Us workflow
+
+**Status:** Implemented and feature-tested (`tests/Feature/ContactMessageTest.php`). Messages are stored in the database and handled only through the administrator dashboard. No email, SMTP, SMS or third-party messaging service is used.
+
+### Public form (`GET /contact`, `POST /contact`)
+
+- Anyone, signed in or not, can send a message with four required fields: name (max 100 characters), email (valid RFC address, max 254), subject (3–150) and message (10–5,000). Input is trimmed, internal whitespace in name/subject is collapsed, and the email is lower-cased before validation.
+- Validation runs on the server; each rule has a plain-language error shown next to its field, and the visitor's input is kept.
+- After a successful submission the form is replaced by a confirmation panel. No acknowledgement email is sent.
+- **Spam and repetition protection:**
+  - **Rate limit:** 3 messages per minute and 10 per day per IP address (named limiter `contact`). A throttled visitor sees an explanation on the form instead of an error page. The IP address is used only by the rate limiter's cache and is never stored with the message.
+  - **Honeypot:** a hidden `website` field that people never see. If it is filled in, the visitor sees the normal confirmation but nothing is stored.
+  - **Duplicates:** an identical message (same email, subject and text) sent again within 10 minutes is not stored a second time.
+- **Data minimisation:** only name, email, subject, message, status and handling timestamps are stored. There is no IP address, user agent, phone number or link to a user account. The page asks visitors not to include passwords or payment details.
+
+### Administrator handling (`/admin/contact-messages`)
+
+- Only the `admin` role can reach the section (existing `auth`, `active`, `verified` and `role:admin` middleware). Guests are redirected to the admin sign-in; homeowners and handymen receive 403 and cannot see any message, including their own.
+- The list is newest first, with received date and time, sender, subject, excerpt and status. It has counts per status, a status filter, and a search across name, email, subject and message text.
+- The detail page shows the full message (escaped, line breaks kept), the received, read and resolved times, and the administrator who last changed the status. Opening a message does not change its status.
+- **Statuses:** `new` → `read` → `resolved`. Administrators can also mark a message as resolved directly, reopen it (back to `read`) or mark it unread (back to `new`). `read_at`/`resolved_at` follow the status, and database CHECK constraints keep them consistent.
+- Each status change is recorded in the activity monitor as `contact_message.status_updated`, with only the old and new status as metadata.
+- Administrators reply from their own email client using the "Reply from your email app" link. BreIn sends nothing itself.
+- The admin sidebar shows the number of new messages.
+
+### Outstanding decision: retention
+
+No automatic deletion or deletion screen exists. Messages are kept until a retention policy is approved. Still to be decided:
+
+- How long new, read and resolved messages are kept.
+- Who may delete messages, and whether deletion is manual or scheduled.
+- Whether resolved messages should be anonymised rather than deleted.
+
+The public email shown on the Contact page (`contact@brein.example`) is still a placeholder until a real support address is chosen.
