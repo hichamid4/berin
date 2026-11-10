@@ -1,6 +1,6 @@
 ﻿# BreIn Functional Specification
 
-**Status:** Approved functional specification; database decisions approved. Stages 1, 2, 4 and 5 are implemented. Stage 3 is implemented except the offer-price filter. In Stage 6, About Us and Contact Us are implemented; the release review, API and deployment are not started. Current status: Section 11.4.
+**Status:** Approved functional specification; database decisions approved. Stages 1–5 are implemented, including the offer-price filter. In Stage 6, About Us, Contact Us and private administrator access with mandatory second-factor authentication are implemented; the release review, API and deployment are not started. A Flutter mobile phase is approved for later (Section 11.8). Current status: Section 11.4.
 **Source of functional requirements:** *Mémoire de Projet de Fin de Cycle — Web Application: BreIn*, Hicham ID AHMED, academic year 2022–2023 (43 pages).  
 **Purpose:** Consolidate the original report into a traceable specification. Report statements, interpretations, and technical proposals are labeled separately.
 
@@ -41,8 +41,8 @@ IDs below are assigned for traceability; they are not identifiers from the repor
 | ACC-10 | A user can change/update their password. | Account module | Explicit |
 | ACC-11 | Account closure preserves historical marketplace records by anonymizing the account; clear unique email and username and mark the identity anonymized. | Account module; approved database default | Decision: behavior approved; self-service account-closure UI is pending |
 | ACC-12 | The user diagram includes “Forgot Password.” | Use-case diagram | Explicit; included in v1 and implemented/tested in Stage 1 |
-| ACC-13 | “Activate account” is labeled “2FA” in the module/organigram. | Account module and organigram | Decision: email verification is the activation method; true 2FA is excluded from v1 |
-| ACC-14 | Administrator authenticates to a protected admin account/area. | Admin actor description and diagram; project brief supplied by user | Decision: separate protected admin login; provision via trusted Artisan command, no public admin signup; Stage 1 implemented |
+| ACC-13 | “Activate account” is labeled “2FA” in the module/organigram. | Account module and organigram | Decision: email verification is the activation method for homeowners and handymen; 2FA is not used for them in v1. Administrators require an authenticator-app second factor (Section 11.7) |
+| ACC-14 | Administrator authenticates to a protected admin account/area. | Admin actor description and diagram; project brief supplied by user | Decision: separate protected admin login under a private, environment-configured path, with mandatory authenticator-app second factor; provision via trusted Artisan command, no public admin signup or public link (Section 11.7) |
 
 ### 3.2 Catalog and discovery
 
@@ -81,7 +81,7 @@ IDs below are assigned for traceability; they are not identifiers from the repor
 | COM-01 | After an offer is accepted, the homeowner can contact the selected handyman through WhatsApp. | Brief and homeowner use case; user-confirmed channel | Decision: WhatsApp only, post-acceptance; pending implementation |
 | COM-02 | Homeowner can contact handyman via phone number. | Dashboard description | Decision: number exposure/action only for the accepted offer participants; exact display/link UX pending |
 | COM-03 | Homeowner use-case says contact is via WhatsApp after booking. | Actor description | Decision: confirmed as the sole communication channel after acceptance |
-| COM-04 | Use-case/organigram includes messaging, instant messages, sharing pictures/documents, and scheduling appointments. | Use-case diagram and organigram | Decision: internal messaging, document sharing, and appointment scheduling are excluded from v1 |
+| COM-04 | Use-case/organigram includes messaging, instant messages, sharing pictures/documents, and scheduling appointments. | Use-case diagram and organigram | Decision: internal messaging, document sharing, and appointment scheduling are excluded from the v1 website. In-app messaging linked to accepted offers is approved for the future mobile app only (Section 11.8) |
 | COM-05 | Homeowner and handyman can schedule, accept, decline, and reschedule appointments. | Use-case diagram and class methods | Decision: excluded from v1 |
 | REV-01 | Homeowner can review/rate a handyman after an accepted offer's request is completed and the homeowner owns that request. | Brief, use-case diagram, class diagram Reviews; approved review rule | Decision: one review per offer; transaction and server authorization required; pending implementation |
 | REV-02 | Review includes a required 1–5 rating and optional comment. A homeowner favorite/like is a separate relation to a handyman. | Use-case and class diagrams; confirmed likes meaning | Decision: review likes/dislikes are excluded; homeowner favorites included |
@@ -114,7 +114,7 @@ Permissions below reflect the report as reconciled with the user's confirmed dec
 | Edit own profile / change password / close account | Yes; closure anonymizes identity and preserves history (implemented in account settings) | Same | Managed through trusted admin process; no public self-registration |
 | Set/manage handyman skills | No | Define and manage own skills (implemented) | Manage skills |
 | Browse service catalog/categories | Yes | Yes | View/manage catalog |
-| Search services by category/service/price | Yes: search and category filter implemented; service pages show offer price statistics, but filtering by offer price is not implemented yet | Search/filter matching requests by category/service/city | Search/view records for administration |
+| Search services by category/service/price | Yes: search, category filter, and an offer-price range filter based on pending and accepted offers (services have no fixed price) | Search/filter matching requests by category/service/city | Search/view records for administration |
 | Search/list handymen by rating/location/likes | Yes; favorites are removable | No | No |
 | Create service request | Yes, own account | No | No |
 | See requests | Own requests, details, and photos | Only matching requests/details/photos permitted by skill rules | Monitor platform requests |
@@ -210,8 +210,8 @@ The following list preserves the original report analysis. User-confirmed resolu
 |---|---|
 | 1. Who creates requests? | Resolved: homeowners only. Handyman-created homeowner requests are excluded from v1. |
 | 2. Offer vs accept/decline request | Resolved: handymen submit offers; homeowners accept/refuse offers. |
-| 3. Activation vs 2FA | Resolved: email verification is used; 2FA is excluded from v1. |
-| 4. Messaging channel | Resolved: WhatsApp only after acceptance; no internal chat or document sharing. Exact link presentation is a UI detail. |
+| 3. Activation vs 2FA | Resolved: email verification activates homeowner and handyman accounts; they do not use 2FA in v1. Administrators must use an authenticator-app second factor (approved later; Section 11.7). |
+| 4. Messaging channel | Resolved for the website: WhatsApp only after acceptance; no internal chat or document sharing. The future mobile app adds in-app messaging linked to accepted offers (Section 11.8). |
 | 5. Appointments | Resolved: excluded from v1. |
 | 6. Payments | Resolved: online and cash payments are excluded from v1. Initial offer currency is MAD. |
 | 7. Handyman request filtering | Resolved: filtering is included; results remain restricted by skill/service matching. |
@@ -235,11 +235,11 @@ These are report requirements and/or user-confirmed v1 behavior: responsive webs
 
 ### Report features explicitly excluded from v1 or requiring detail before their later implementation
 
-The report still supplies traceability for true 2FA, handyman-created requests/direct request acceptance, internal messaging/media/documents, appointment scheduling, and cash/card/PayPal payments; each is explicitly excluded from v1. Review like/dislike is excluded in favor of a separate homeowner favorite. Contact Us message retention, admin review moderation beyond monitoring, precise rating/handyman ranking semantics, optional profile updates, and a few page-content details are pending their respective implementation phase. These are not silently treated as shipped functionality.
+The report still supplies traceability for 2FA for homeowners and handymen, handyman-created requests/direct request acceptance, internal website messaging/media/documents, appointment scheduling, and cash/card/PayPal payments; each is explicitly excluded from v1. Review like/dislike is excluded in favor of a separate homeowner favorite. Contact Us message retention, admin review moderation beyond monitoring, precise handyman ranking semantics, optional profile updates, and a few page-content details are pending their respective implementation phase. These are not silently treated as shipped functionality.
 
 ## 9. Approved v1 implementation scope
 
-This is the approved scope, based on the report and the user's confirmed decisions. Items 1–8 are implemented, except the offer-price filter (item 5) and the Contact Us retention decision (item 8). Item 9 is partly done: the UI is responsive and business rules live outside Blade, but no API exists yet. See Section 11.4.
+This is the approved scope, based on the report and the user's confirmed decisions. Items 1–8 are implemented; only the Contact Us retention decision (item 8) is outstanding. Administrator access is additionally protected by a private path and a mandatory second factor (Section 11.7). Item 9 is partly done: the UI is responsive and business rules live outside Blade, but no API exists yet. See Section 11.4.
 
 ### Baseline for the first website increment
 
@@ -251,11 +251,11 @@ This is the approved scope, based on the report and the user's confirmed decisio
 6. Homeowner requests/photos, handyman offers/photos and tracking, homeowner comparison/acceptance, and confirmed completion.
 7. Authorized post-acceptance WhatsApp, eligible reviews/ratings, and homeowner favorites.
 8. About Us and Contact Us. Contact Us messages are stored and handled by administrators in the dashboard (Section 11.6); the retention period is still to be decided.
-9. Responsive UI and backend organization that allows a later versioned API/Flutter client to reuse business rules. No mobile app is part of v1.
+9. Responsive UI and backend organization that allows a later versioned API/Flutter client to reuse business rules. No mobile app is part of v1; the approved mobile phase is recorded in Section 11.8.
 
 ### Explicitly excluded from v1
 
-True 2FA; handyman-created homeowner requests and direct request acceptance; internal chat; document sharing; appointment scheduling/rescheduling; online or cash payment; review like/dislike. Add these only after explicit later approval. Do not collect UML-only identity/profile fields unless they are separately approved.
+2FA for homeowners and handymen (administrators require it, Section 11.7); handyman-created homeowner requests and direct request acceptance; internal chat on the website (approved only for the future mobile app, Section 11.8); document sharing; appointment scheduling/rescheduling; online or cash payment; review like/dislike. Add these only after explicit later approval. Do not collect UML-only identity/profile fields unless they are separately approved.
 
 **Scope safeguard:** Exclusions above are explicit v1 decisions, not accidental omissions. Preserve the report analysis so a future approved scope change can be traced.
 
@@ -267,7 +267,7 @@ The following product/schema decisions are already approved and must not be reop
 - Admin dashboard statistics are implemented from stored records (users by role/status, requests and offers by status, reviews and average rating, skills, accepted offer value, category demand); further metrics only on request.
 - Admin review moderation actions beyond monitoring, if later required.
 - Resolved: request and offer photos are JPG, PNG or WebP, at most 5 MB each and 5 per request or offer, stored on the private `local` disk. Handyman profile photos are at most 2 MB.
-- Handyman discovery currently filters by skill and city and orders by average review rating. Any more precise ranking rule and the offer-price filter are still to be defined.
+- Handyman discovery filters by skill and city and orders by average review rating; any more precise ranking rule is still to be defined. The catalog offer-price filter is implemented (Section 11.4, Stage 3).
 - API token/session strategy and API contract before exposing a Flutter-facing API.
 
 These implementation details do not change the approved schema or v1 feature scope. No additional features should be inferred from them.
@@ -290,8 +290,8 @@ These implementation details do not change the approved schema or v1 feature sco
 | 6. Account deletion and blocking | Users are not physically deleted from historical records. Closing an account anonymizes it: preserve user ID and foreign-key history, set email and username to NULL, set status `anonymized`, and set `deleted_at`. Active and blocked identities require email and username. Blocking records `blocked_at` and `blocked_by`; blocked users cannot use protected marketplace actions. |
 | Currency | Offer price is a positive `DECIMAL(12,2)`; currency defaults to `MAD` (Moroccan dirham). Price filtering uses offer prices; services have no fixed-price or homeowner-budget field. |
 | Reviews and favorites | Reviews contain `offer_id`, required rating 1–5, optional comment, and timestamps; `offer_id` is the primary key. A homeowner favorite is a separate removable homeowner/handyman relationship. Review likes/dislikes are excluded. |
-| Communication and exclusions | WhatsApp is the only communication channel and becomes available to the homeowner only after acceptance. No internal chat, document sharing, appointments/rescheduling, payments, handyman-created requests, or 2FA in v1. |
-| Administrator | Administrator is the `admin` role in the shared users table, provisioned through a trusted CLI command; no public admin signup. The protected dashboard manages users, catalog and skills, and monitors persisted requests, offers, reviews, and activity. |
+| Communication and exclusions | WhatsApp is the only communication channel and becomes available to the homeowner only after acceptance. On the website: no internal chat, document sharing, appointments/rescheduling, payments, or handyman-created requests in v1, and no 2FA for homeowners or handymen. In-app messaging is approved for the future mobile app only (Section 11.8). |
+| Administrator | Administrator is the `admin` role in the shared users table, provisioned through a trusted CLI command; no public admin signup or public link. Administration is served under a private path and requires a password plus an authenticator-app code (Section 11.7). The protected dashboard manages users, catalog and skills, and monitors persisted requests, offers, reviews, and activity. |
 
 ## 11.2 Approved relational schema
 
@@ -362,7 +362,7 @@ Review creation must lock/check the accepted offer and associated request in one
 | Requests, private location, optional photos | Demande/PictureOff UML; homeowner sequence | Implemented: create, edit and cancel while open; private location; private photos |
 | Offers, currency, photos, acceptance | Offer UML and offer sequence | Implemented: submit, edit and withdraw; photos; accept or decline under row lock; other offers superseded |
 | Completion confirmation and review eligibility | Confirmed completion/review lifecycle | Implemented: handyman completion, homeowner confirmation, one review per eligible offer |
-| Favorites, WhatsApp, search, admin oversight | Use cases and confirmed scope | Implemented, except the offer-price filter: favorites, WhatsApp after acceptance, catalog/handyman/request search, admin monitoring and activity log |
+| Favorites, WhatsApp, search, admin oversight | Use cases and confirmed scope | Implemented: favorites, WhatsApp after acceptance, catalog search with offer-price filter, handyman and request search, admin monitoring and activity log |
 | Contact Us messages and admin handling | PUB-02, Contact Us page | Implemented and feature-tested (Section 11.6); retention decision outstanding |
 | Excluded v1 features | Report diagrams, narrowed by user decisions | Not implemented and must remain excluded |
 
@@ -385,12 +385,12 @@ Review creation must lock/check the accepted offer and associated request in one
 - Persisted activity monitor and an admin dashboard of statistics derived from stored records.
 - Phone required for homeowners and handymen (E.164, Moroccan local input normalised); 8-character password minimum; branded verification and reset emails; `app:mail-test` diagnostic command.
 
-### Stage 3 — Catalog and discovery: complete except the offer-price filter
+### Stage 3 — Catalog and discovery: complete
 
 - Public catalog with search and category filter; inactive categories and services leave the catalog. Service pages show offer price statistics.
 - Handyman directory filtered by skill and city and ordered by average rating; homeowners add and remove favorites.
 - Skill-matched handyman request browser filtered by category, service, city, and keyword.
-- **Not implemented:** filtering by offer price (Section 4 matrix).
+- Offer-price range filter (MAD). It keeps services with at least one pending or accepted offer in the range, using the same definition as the service page's price range. Withdrawn, declined and superseded offers are ignored, and services without offers are hidden only while a price filter is active. Each card shows its offer range. Invalid ranges return to the catalog with an explanation.
 
 ### Stage 4 — Requests and offers: complete
 
@@ -406,8 +406,8 @@ Review creation must lock/check the accepted offer and associated request in one
 
 ### Stage 6 — Public pages, API readiness, and release checks: in progress
 
-- **Done:** About Us page; Contact Us messages with administrator handling (Section 11.6).
-- **Not started:** responsive, accessibility, and security release review; reusable versioned API design (no API routes exist yet); deployment readiness. Flutter remains future scope.
+- **Done:** About Us page; Contact Us messages with administrator handling (Section 11.6); private administrator access with mandatory second factor (Section 11.7).
+- **Not started:** responsive, accessibility, and security release review; reusable versioned API design (no API routes exist yet); deployment readiness. The Flutter mobile app is a later, approved phase (Section 11.8).
 
 Every implemented module is covered by feature tests (`tests/Feature`). Tests that reset the database run only against a `*_testing` database; the others use transactions and can run against the development database.
 
@@ -417,9 +417,9 @@ These details do not reopen the approved schema or v1 scope:
 
 - Contact Us message retention period and deletion responsibility (outstanding; see Section 11.6).
 - Review moderation actions beyond monitoring.
-- Offer-price filter and any ranking rule beyond ordering by average rating.
+- Any handyman ranking rule beyond ordering by average rating.
 - Exact profile/address visibility screens within the approved privacy boundary.
-- Versioned API contract and token/session strategy for a future Flutter client.
+- Versioned API contract, mobile authentication (token) strategy, messaging data model and push-notification provider for the Flutter phase (Section 11.8).
 - Production SMTP/provider credentials and deployment configuration.
 
 ## 11.6 Contact Us workflow
@@ -441,9 +441,9 @@ These details do not reopen the approved schema or v1 scope:
   - **Duplicates:** an identical message (same email, subject and text) sent again within 10 minutes is not stored a second time.
 - **Data minimisation:** only name, email, subject, message, status and handling timestamps are stored. There is no IP address, user agent, phone number or link to a user account. The page asks visitors not to include passwords or payment details.
 
-### Administrator handling (`/admin/contact-messages`)
+### Administrator handling (Admin → Contact messages)
 
-- Only the `admin` role can reach the section (existing `auth`, `active`, `verified` and `role:admin` middleware). Guests are redirected to the admin sign-in; homeowners and handymen receive 403 and cannot see any message, including their own.
+- Only the `admin` role can reach the section, under the private administration path, after password and second factor (`auth`, `active`, `verified`, `admin.2fa` and `role:admin` middleware; Section 11.7). Guests are redirected to the admin sign-in; homeowners and handymen receive 403 and cannot see any message, including their own.
 - The list is newest first, with received date and time, sender, subject, excerpt and status. It has counts per status, a status filter, and a search across name, email, subject and message text.
 - The detail page shows the full message (escaped, line breaks kept), the received, read and resolved times, and the administrator who last changed the status. Opening a message does not change its status.
 - **Statuses:** `new` → `read` → `resolved`. Administrators can also mark a message as resolved directly, reopen it (back to `read`) or mark it unread (back to `new`). `read_at`/`resolved_at` follow the status, and database CHECK constraints keep them consistent.
@@ -462,3 +462,74 @@ No automatic deletion or deletion screen exists. Messages are kept until a reten
 ### Outstanding: real support email address
 
 The address shown on the Contact page, `contact@brein.example`, is a **placeholder, not a working mailbox**. It is marked with a `PLACEHOLDER` comment in `resources/views/pages/contact.blade.php` and must be replaced when the owner provides the real support address.
+
+## 11.7 Private administrator access and second factor
+
+**Status:** Implemented and feature-tested (`tests/Feature/AdministratorAccessTest.php`). Approved on 10 November 2026: hide the administrator sign-in from the public website and require a second factor for administrators.
+
+### Private path
+
+- Every administration URL, including the sign-in and second-factor pages, is served under a secret prefix read from `ADMIN_PATH` in the local `.env`. The value is never committed, linked, listed in a sitemap or `robots.txt`, or written in documentation.
+- `php artisan app:admin-path --generate` writes a random value (`manage-` plus 32 random characters). `php artisan app:admin-path --show` prints the sign-in URL in a trusted terminal. Without `--show`, nothing secret is printed.
+- If `ADMIN_PATH` is missing or shorter than 24 characters, a path derived from `APP_KEY` with an HMAC is used. The area therefore never falls back to a predictable address such as `/admin`.
+- `/admin/...` URLs return 404. Named routes (`admin.login`, `admin.dashboard`, …) are unchanged.
+- The public header, footer and About page contain no administrator link.
+- Administration responses send `X-Robots-Tag: noindex, nofollow, noarchive`, `Referrer-Policy: same-origin` and `Cache-Control: no-store`, so the URL is not indexed, cached or leaked to other sites through the Referer header.
+- **The private path is not a security control on its own.** Knowing it grants nothing: every route below still requires the checks that follow.
+
+### Sign-in and second factor (authenticator app, TOTP, RFC 6238)
+
+1. The administrator enters their email and password on the private sign-in page. A correct password does **not** sign them in; it only creates a pending state that lasts 10 minutes. Administrators never get a "remember me" cookie.
+2. **First sign-in after this change:** the administrator scans a QR code (or types the key) into an authenticator app and confirms a 6-digit code. They then receive 8 one-time recovery codes, shown once.
+3. **Later sign-ins:** they enter the current 6-digit code, or one recovery code.
+4. Only then is the session created and marked as having passed the second factor. Middleware `admin.2fa` ends any administrator session without that mark, for example one restored from an old cookie. This applies to the administration area and to the shared account pages.
+
+**Credential storage:** secrets live in the `two_factor_credentials` table (one row per administrator, separate from `users`, forward-only migration).
+- The secret is encrypted with `APP_KEY`.
+- Recovery codes are stored only as SHA-256 hashes inside an encrypted column.
+- The last accepted time step is stored, so a code cannot be replayed.
+
+### Access rules (all enforced on the server)
+
+- Every administration route requires: authenticated session, active account, verified email, second factor passed, and the `admin` role.
+- These checks run before route-model binding, so a refused request cannot tell whether a record exists.
+- **Guests** are redirected to the private sign-in.
+- **Homeowners and handymen** receive 403.
+- **Blocked or anonymized accounts** are signed out.
+- **Administrator credentials** are refused on the homeowner and handyman sign-in forms, and the reverse.
+
+### Brute-force protection
+
+- **Password step:** 5 attempts per minute per email and IP address; 10 per minute and 30 per hour per IP address.
+- **Second-factor step:** 10 submissions per minute per IP address. After 5 wrong codes, the pending sign-in is cancelled and the account's second factor is locked for 15 minutes.
+- Failed password and code attempts, successful sign-ins, enrolment, recovery-code regeneration and resets are recorded in the activity monitor.
+
+### Recovery procedure (no lock-out)
+
+- **Lost phone:** sign in with a recovery code, then generate new codes under **Security** (requires the password).
+- **Lost phone and recovery codes:** from a trusted terminal on the server, run `php artisan app:admin-two-factor reset <admin email>`. At the next sign-in the administrator enters their password and enrols a new authenticator app. `php artisan app:admin-two-factor status` lists each administrator's state.
+- **Forgotten private URL:** run `php artisan app:admin-path --show` on the server.
+
+### Remaining limitations
+
+- An administrator who has not enrolled yet can enrol with the password alone at the next sign-in. Each administrator should therefore sign in and enrol promptly; `app:admin-two-factor status` shows who has not.
+- Passkeys (WebAuthn) are not implemented. Authenticator apps were chosen because they need no extra browser support or HTTPS-only APIs and work offline.
+- Rate limits use the application cache (`database` store locally). In production they need a shared cache, and the server must report the real client IP address behind any proxy.
+- The private path appears in the browser history and address bar of anyone who uses it. It is a concealment layer, not a credential, and should be rotated (`--generate --force`) if it is shared by mistake.
+- The forgot-password flow is shared with other roles. A password reset alone still cannot open administration without the second factor.
+
+## 11.8 Future phase — Flutter mobile application (approved, not started)
+
+Approved product decisions, recorded for a later phase. No mobile code exists yet, and the website v1 scope above is unchanged.
+
+| Decision | Detail |
+|---|---|
+| Client | Flutter mobile application. |
+| Backend | The existing Laravel backend and its shared business rules (requests, offers, acceptance, completion, reviews, authorization) serve the mobile app through a versioned API. Rules are not duplicated in the app. |
+| Experiences | Separate homeowner and handyman mobile experiences. |
+| Messaging | In-app messaging between homeowner and handyman, on mobile only. Each conversation is linked to an accepted offer, so only its two participants can take part. |
+| Notifications | Push notifications for new messages. |
+| Website channel | WhatsApp remains the communication channel on the website. |
+| Administration | Administrator management remains primarily on the website. |
+
+**To decide before implementation:** API contract and versioning; mobile authentication (token) strategy; messaging data model, retention and moderation; push-notification provider; behaviour of conversations after completion or cancellation; whether website users can read mobile conversations.

@@ -40,7 +40,7 @@ class CatalogAdministrationTest extends TestCase
         $category = Category::factory()->create();
         $skills = Skill::factory()->count(2)->create();
 
-        $this->actingAs($this->administrator)->post(route('admin.services.store'), [
+        $this->actingAsAdministrator($this->administrator)->post(route('admin.services.store'), [
             'category_id' => $category->id,
             'name' => 'Shower screen fitting',
             'description' => 'Installation of glass shower screens with sealed joints.',
@@ -55,7 +55,7 @@ class CatalogAdministrationTest extends TestCase
 
     public function test_a_service_requires_at_least_one_skill(): void
     {
-        $this->actingAs($this->administrator)->post(route('admin.services.store'), [
+        $this->actingAsAdministrator($this->administrator)->post(route('admin.services.store'), [
             'category_id' => Category::factory()->create()->id,
             'name' => 'Unreachable service',
             'description' => 'A service that no handyman could ever see.',
@@ -69,7 +69,7 @@ class CatalogAdministrationTest extends TestCase
         $service = Service::factory()->create();
         $service->skills()->attach([$kept->id, $removed->id]);
 
-        $this->actingAs($this->administrator)->put(route('admin.services.update', $service), [
+        $this->actingAsAdministrator($this->administrator)->put(route('admin.services.update', $service), [
             'category_id' => $service->category_id,
             'name' => $service->name,
             'description' => $service->description,
@@ -86,7 +86,7 @@ class CatalogAdministrationTest extends TestCase
         $skill = Skill::factory()->create();
         HandymanProfile::factory()->create()->skills()->attach($skill);
 
-        $this->actingAs($this->administrator)
+        $this->actingAsAdministrator($this->administrator)
             ->get(route('admin.skills.delete', $skill), ['X-Requested-With' => 'XMLHttpRequest'])
             ->assertOk()
             ->assertSee('Held by 1 handyman')
@@ -102,7 +102,7 @@ class CatalogAdministrationTest extends TestCase
         $service->skills()->attach($skill);
         HandymanProfile::factory()->create()->skills()->attach($skill);
 
-        $this->actingAs($this->administrator)
+        $this->actingAsAdministrator($this->administrator)
             ->from(route('admin.services.index'))
             ->delete(route('admin.services.destroy', $service))
             ->assertRedirect(route('admin.services.index'))
@@ -118,12 +118,12 @@ class CatalogAdministrationTest extends TestCase
         $service->skills()->attach(Skill::factory()->create());
         ServiceRequest::factory()->create(['service_id' => $service->id]);
 
-        $this->actingAs($this->administrator)
+        $this->actingAsAdministrator($this->administrator)
             ->delete(route('admin.services.destroy', $service))
             ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'referenced by 1 service request'));
         $this->assertModelExists($service);
 
-        $this->actingAs($this->administrator)->patch(route('admin.services.toggle', $service))->assertSessionHas('success');
+        $this->actingAsAdministrator($this->administrator)->patch(route('admin.services.toggle', $service))->assertSessionHas('success');
         $this->assertFalse($service->fresh()->is_active);
         $this->assertDatabaseHas('activity_events', ['action' => 'service.deactivated', 'subject_id' => $service->id]);
     }
@@ -134,7 +134,7 @@ class CatalogAdministrationTest extends TestCase
         $service = Service::factory()->create();
         $service->skills()->attach($skill);
 
-        $this->actingAs($this->administrator)
+        $this->actingAsAdministrator($this->administrator)
             ->delete(route('admin.services.destroy', $service))
             ->assertRedirect(route('admin.services.index'))
             ->assertSessionHas('success');
@@ -150,12 +150,12 @@ class CatalogAdministrationTest extends TestCase
         Service::factory()->create()->skills()->attach($usedByService);
         $unused = Skill::factory()->create();
 
-        $this->actingAs($this->administrator)
+        $this->actingAsAdministrator($this->administrator)
             ->delete(route('admin.skills.destroy', $usedByService))
             ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'required by 1 service'));
         $this->assertModelExists($usedByService);
 
-        $this->actingAs($this->administrator)->delete(route('admin.skills.destroy', $unused))->assertSessionHas('success');
+        $this->actingAsAdministrator($this->administrator)->delete(route('admin.skills.destroy', $unused))->assertSessionHas('success');
         $this->assertModelMissing($unused);
     }
 
@@ -165,7 +165,7 @@ class CatalogAdministrationTest extends TestCase
         $service = Service::factory()->for($category)->create();
         ServiceRequest::factory()->create(['service_id' => $service->id]);
 
-        $this->actingAs($this->administrator)
+        $this->actingAsAdministrator($this->administrator)
             ->delete(route('admin.categories.destroy', $category))
             ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'Deactivate it instead'));
 
@@ -175,19 +175,19 @@ class CatalogAdministrationTest extends TestCase
 
     public function test_administrator_creates_edits_and_toggles_a_category(): void
     {
-        $this->actingAs($this->administrator)->post(route('admin.categories.store'), ['name' => 'Pool & Spa', 'is_active' => '1'])
+        $this->actingAsAdministrator($this->administrator)->post(route('admin.categories.store'), ['name' => 'Pool & Spa', 'is_active' => '1'])
             ->assertRedirect(route('admin.categories.index'));
         $category = Category::query()->where('name', 'Pool & Spa')->firstOrFail();
 
-        $this->actingAs($this->administrator)->put(route('admin.categories.update', $category), ['name' => 'Pool & Spa Care', 'is_active' => '1'])
+        $this->actingAsAdministrator($this->administrator)->put(route('admin.categories.update', $category), ['name' => 'Pool & Spa Care', 'is_active' => '1'])
             ->assertSessionHas('success');
         $this->assertSame('Pool & Spa Care', $category->fresh()->name);
 
-        $this->actingAs($this->administrator)->post(route('admin.categories.store'), ['name' => 'Pool & Spa Care'])->assertSessionHasErrors('name');
+        $this->actingAsAdministrator($this->administrator)->post(route('admin.categories.store'), ['name' => 'Pool & Spa Care'])->assertSessionHasErrors('name');
 
-        $this->actingAs($this->administrator)->patch(route('admin.categories.toggle', $category));
+        $this->actingAsAdministrator($this->administrator)->patch(route('admin.categories.toggle', $category));
         $this->assertFalse($category->fresh()->is_active);
-        $this->actingAs($this->administrator)->patch(route('admin.categories.toggle', $category));
+        $this->actingAsAdministrator($this->administrator)->patch(route('admin.categories.toggle', $category));
         $this->assertTrue($category->fresh()->is_active);
     }
 
@@ -204,20 +204,20 @@ class CatalogAdministrationTest extends TestCase
     {
         $service = Service::factory()->create();
 
-        $this->actingAs($this->administrator)->post(route('admin.skills.store'), [
+        $this->actingAsAdministrator($this->administrator)->post(route('admin.skills.store'), [
             'name' => 'Pool maintenance', 'description' => 'Cleaning and chemical balance.', 'is_active' => '1', 'service_ids' => [$service->id],
         ])->assertRedirect(route('admin.skills.index'));
         $skill = Skill::query()->where('name', 'Pool maintenance')->firstOrFail();
         $this->assertSame([$service->id], $skill->services()->pluck('services.id')->all());
 
-        $this->actingAs($this->administrator)->put(route('admin.skills.update', $skill), [
+        $this->actingAsAdministrator($this->administrator)->put(route('admin.skills.update', $skill), [
             'name' => 'Pool & spa maintenance', 'is_active' => '1', 'service_ids' => [],
         ])->assertSessionHas('success');
         $this->assertSame('Pool & spa maintenance', $skill->fresh()->name);
         $this->assertSame(0, $skill->services()->count());
         $this->assertModelExists($service);
 
-        $this->actingAs($this->administrator)->patch(route('admin.skills.toggle', $skill));
+        $this->actingAsAdministrator($this->administrator)->patch(route('admin.skills.toggle', $skill));
         $this->assertFalse($skill->fresh()->is_active);
     }
 
@@ -228,7 +228,7 @@ class CatalogAdministrationTest extends TestCase
         $service = Service::factory()->for($category)->create();
         $service->skills()->attach($skill);
 
-        $this->actingAs($this->administrator)->delete(route('admin.categories.destroy', $category))->assertSessionHas('success');
+        $this->actingAsAdministrator($this->administrator)->delete(route('admin.categories.destroy', $category))->assertSessionHas('success');
 
         $this->assertModelMissing($category);
         $this->assertModelMissing($service);

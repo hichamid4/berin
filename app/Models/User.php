@@ -45,6 +45,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(HandymanProfile::class);
     }
 
+    public function twoFactorCredential(): HasOne
+    {
+        return $this->hasOne(TwoFactorCredential::class);
+    }
+
     public function blockedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'blocked_by');

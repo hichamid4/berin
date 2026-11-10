@@ -43,8 +43,6 @@
                             <ul class="dropdown-menu dropdown-menu-end shadow">
                                 <li><a class="dropdown-item" href="{{ route('login') }}"><i class="bi bi-house-door me-2 text-primary"></i>Homeowner</a></li>
                                 <li><a class="dropdown-item" href="{{ route('handyman.login') }}"><i class="bi bi-tools me-2 text-primary"></i>Handyman</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ route('admin.login') }}"><i class="bi bi-shield-lock me-2 text-primary"></i>Administrator</a></li>
                             </ul>
                         </div>
                         <a class="btn btn-primary" href="{{ route('register', 'homeowner') }}"><i class="bi bi-plus-circle me-1"></i>Post a request</a>
@@ -86,7 +84,6 @@
                     <li><a href="{{ route('login') }}">Homeowner sign in</a></li>
                     <li><a href="{{ route('handyman.login') }}">Handyman sign in</a></li>
                     <li><a href="{{ route('register', 'handyman') }}">Join as a handyman</a></li>
-                    <li><a href="{{ route('admin.login') }}">Administration</a></li>
                 </ul>
             </div>
             <div class="col-lg-4">

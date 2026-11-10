@@ -42,9 +42,39 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($email.'|'.$request->ip());
         });
 
+        $this->limitAdministratorSignIn();
         $this->limitContactMessages();
         $this->shareUnreadContactMessageCount();
         $this->brandAuthenticationEmails();
+    }
+
+    /**
+     * Brute-force protection for the private administrator sign-in, in addition to the second
+     * factor's own per-account limit (AdministratorTwoFactorController::MAX_ATTEMPTS):
+     * - password step: 5 attempts per minute per email and IP, 10 per minute and 30 per hour per IP;
+     * - second-factor step: 10 submissions per minute per IP.
+     * Throttled requests return to the sign-in page with the waiting time instead of a 429 page.
+     */
+    private function limitAdministratorSignIn(): void
+    {
+        $tooMany = fn (Request $request, array $headers) => to_route('admin.login')
+            ->withInput($request->only('email'))
+            ->withErrors(['email' => 'Too many sign-in attempts. Try again in '.max(1, (int) ceil(((int) ($headers['Retry-After'] ?? 60)) / 60)).' minute(s).'])
+            ->withHeaders($headers);
+
+        RateLimiter::for('admin-login', function (Request $request) use ($tooMany): array {
+            $email = Str::transliterate(Str::lower($request->string('email')->toString()));
+
+            return [
+                Limit::perMinute(5)->by('admin-login|'.$email.'|'.$request->ip())->response($tooMany),
+                Limit::perMinute(10)->by('admin-login-ip|'.$request->ip())->response($tooMany),
+                Limit::perHour(30)->by('admin-login-ip-hour|'.$request->ip())->response($tooMany),
+            ];
+        });
+
+        RateLimiter::for('admin-two-factor', fn (Request $request): Limit => Limit::perMinute(10)
+            ->by('admin-two-factor-ip|'.$request->ip())
+            ->response($tooMany));
     }
 
     /**

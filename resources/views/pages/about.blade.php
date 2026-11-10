@@ -51,14 +51,14 @@
             @foreach ([
                 ['bi-house-heart', 'Homeowners', 'Post requests, compare offers, book with confidence and review the result.', route('register', 'homeowner'), 'Create a homeowner account'],
                 ['bi-tools', 'Handymen', 'Declare your skills, receive matching requests and grow a reputation through reviews.', route('register', 'handyman'), 'Join as a handyman'],
-                ['bi-shield-lock', 'Administrators', 'Manage users, the service catalog and skills, and monitor activity across the marketplace.', route('admin.login'), 'Administrator sign in'],
+                ['bi-shield-lock', 'Administrators', 'Manage users, the service catalog and skills, and monitor activity across the marketplace.', null, null],
             ] as [$icon, $title, $text, $url, $label])
                 <div class="col-md-4">
                     <div class="card h-100 text-center"><div class="card-body p-4 d-flex flex-column">
                         <i class="bi {{ $icon }} display-5 text-primary mb-3"></i>
                         <h3 class="h5">{{ $title }}</h3>
                         <p class="text-secondary small">{{ $text }}</p>
-                        <a class="btn btn-outline-primary mt-auto" href="{{ $url }}">{{ $label }}</a>
+                        @if ($url)<a class="btn btn-outline-primary mt-auto" href="{{ $url }}">{{ $label }}</a>@endif
                     </div></div>
                 </div>
             @endforeach

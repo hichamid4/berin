@@ -134,13 +134,13 @@ class AccountManagementTest extends TestCase
         $administrator = User::factory()->role(UserRole::Administrator)->create();
         $member = User::factory()->create();
 
-        $this->actingAs($administrator)->post(route('admin.users.block', $member))->assertSessionHas('success');
+        $this->actingAsAdministrator($administrator)->post(route('admin.users.block', $member))->assertSessionHas('success');
         $this->assertSame('blocked', $member->fresh()->status);
         $this->assertSame($administrator->id, $member->fresh()->blocked_by);
 
         $this->actingAs($member->fresh())->get(route('homeowner.dashboard'))->assertRedirect(route('login'));
 
-        $this->actingAs($administrator)->post(route('admin.users.unblock', $member))->assertSessionHas('success');
+        $this->actingAsAdministrator($administrator)->post(route('admin.users.unblock', $member))->assertSessionHas('success');
         $this->assertSame('active', $member->fresh()->status);
         $this->assertNull($member->fresh()->blocked_at);
     }
@@ -168,18 +168,18 @@ class AccountManagementTest extends TestCase
         $administrator = User::factory()->role(UserRole::Administrator)->create();
         $member = User::factory()->create(['first_name' => 'Zakaria', 'last_name' => 'Searchable', 'phone_e164' => '+212600000099']);
 
-        $this->actingAs($administrator)->get(route('admin.users.index', ['q' => 'Searchable']))->assertOk()->assertSee('Zakaria Searchable');
-        $this->actingAs($administrator)->get(route('admin.users.index', ['q' => 'no-such-member']))->assertOk()->assertDontSee('Zakaria Searchable');
+        $this->actingAsAdministrator($administrator)->get(route('admin.users.index', ['q' => 'Searchable']))->assertOk()->assertSee('Zakaria Searchable');
+        $this->actingAsAdministrator($administrator)->get(route('admin.users.index', ['q' => 'no-such-member']))->assertOk()->assertDontSee('Zakaria Searchable');
 
-        $this->actingAs($administrator)->post(route('admin.users.anonymize', $member), ['confirmation' => 'wrong'])->assertSessionHasErrors('confirmation');
+        $this->actingAsAdministrator($administrator)->post(route('admin.users.anonymize', $member), ['confirmation' => 'wrong'])->assertSessionHasErrors('confirmation');
         $this->assertSame('active', $member->fresh()->status);
 
-        $this->actingAs($administrator)->post(route('admin.users.anonymize', $member), ['confirmation' => 'ANONYMIZE'])->assertSessionHas('success');
+        $this->actingAsAdministrator($administrator)->post(route('admin.users.anonymize', $member), ['confirmation' => 'ANONYMIZE'])->assertSessionHas('success');
         $anonymized = User::withTrashed()->findOrFail($member->id);
         $this->assertSame('anonymized', $anonymized->status);
         $this->assertNull($anonymized->phone_e164);
         $this->assertNull($anonymized->email);
-        $this->actingAs($administrator)->get(route('admin.users.show', $member->id))->assertOk()->assertSee('Former member');
+        $this->actingAsAdministrator($administrator)->get(route('admin.users.show', $member->id))->assertOk()->assertSee('Former member');
     }
 
     public function test_administrator_accounts_cannot_be_blocked(): void
@@ -187,7 +187,7 @@ class AccountManagementTest extends TestCase
         $administrator = User::factory()->role(UserRole::Administrator)->create();
         $otherAdministrator = User::factory()->role(UserRole::Administrator)->create();
 
-        $this->actingAs($administrator)->post(route('admin.users.block', $otherAdministrator))
+        $this->actingAsAdministrator($administrator)->post(route('admin.users.block', $otherAdministrator))
             ->assertSessionHas('error', 'Administrator accounts cannot be blocked from the dashboard.');
         $this->assertSame('active', $otherAdministrator->fresh()->status);
     }

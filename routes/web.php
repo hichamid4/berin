@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Accounts\AdministratorPath;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin\ActivityEventController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -7,10 +8,13 @@ use App\Http\Controllers\Admin\ContactMessageController as AdminContactMessageCo
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OfferController as AdminOfferController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\ServiceRequestController as AdminServiceRequestController;
 use App\Http\Controllers\Admin\SkillController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\AdministratorLoginController;
+use App\Http\Controllers\Auth\AdministratorTwoFactorController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -50,8 +54,6 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->defaults('role', 'homeowner')->middleware('throttle:login')->name('login.store');
     Route::get('/handyman/login', [AuthenticatedSessionController::class, 'create'])->defaults('role', 'handyman')->name('handyman.login');
     Route::post('/handyman/login', [AuthenticatedSessionController::class, 'store'])->defaults('role', 'handyman')->middleware('throttle:login')->name('handyman.login.store');
-    Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->defaults('role', 'admin')->name('admin.login');
-    Route::post('/admin/login', [AuthenticatedSessionController::class, 'store'])->defaults('role', 'admin')->middleware('throttle:login')->name('admin.login.store');
 
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->middleware('throttle:6,1')->name('password.email');
@@ -59,13 +61,13 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->middleware('throttle:6,1')->name('password.store');
 });
 
-Route::middleware(['auth', 'active'])->group(function (): void {
+Route::middleware(['auth', 'active', 'admin.2fa'])->group(function (): void {
     Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])->middleware('throttle:6,1')->name('verification.send');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
-Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
+Route::middleware(['auth', 'active', 'verified', 'admin.2fa'])->group(function (): void {
     Route::get('/account', [AccountController::class, 'edit'])->name('account.edit');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:6,1')->name('account.password.update');
@@ -105,8 +107,24 @@ Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
         Route::post('/offers/{offer}/complete', [OfferController::class, 'markCompleted'])->name('offers.complete');
         Route::delete('/offers/{offer}/photos/{photo}', [OfferController::class, 'destroyPhoto'])->name('offers.photos.destroy');
     });
+});
 
-    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function (): void {
+/*
+| Administration lives under a private prefix read from the local environment (ADMIN_PATH).
+| The prefix only hides the sign-in page; every route below still requires the password,
+| the second factor, the administrator role and an active, verified account.
+*/
+Route::prefix(AdministratorPath::prefix())->name('admin.')->middleware('admin.private')->group(function (): void {
+    Route::middleware('guest')->group(function (): void {
+        Route::get('/login', [AdministratorLoginController::class, 'create'])->name('login');
+        Route::post('/login', [AdministratorLoginController::class, 'store'])->middleware('throttle:admin-login')->name('login.store');
+        Route::get('/two-factor-challenge', [AdministratorTwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+        Route::post('/two-factor-challenge', [AdministratorTwoFactorController::class, 'verify'])->middleware('throttle:admin-two-factor')->name('two-factor.verify');
+        Route::get('/two-factor-setup', [AdministratorTwoFactorController::class, 'setup'])->name('two-factor.setup');
+        Route::post('/two-factor-setup', [AdministratorTwoFactorController::class, 'confirm'])->middleware('throttle:admin-two-factor')->name('two-factor.confirm');
+    });
+
+    Route::middleware(['auth', 'active', 'verified', 'admin.2fa', 'role:admin'])->group(function (): void {
         Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
 
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -131,5 +149,8 @@ Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
         Route::get('/contact-messages', [AdminContactMessageController::class, 'index'])->name('contact-messages.index');
         Route::get('/contact-messages/{contactMessage}', [AdminContactMessageController::class, 'show'])->name('contact-messages.show');
         Route::patch('/contact-messages/{contactMessage}/status', [AdminContactMessageController::class, 'updateStatus'])->name('contact-messages.status');
+
+        Route::get('/security', [SecurityController::class, 'show'])->name('security');
+        Route::post('/security/recovery-codes', [SecurityController::class, 'regenerateRecoveryCodes'])->middleware('throttle:6,1')->name('security.recovery-codes');
     });
 });

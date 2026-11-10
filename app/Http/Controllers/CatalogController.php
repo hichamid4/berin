@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CatalogFilterRequest;
 use App\Models\Category;
 use App\Models\HandymanProfile;
 use App\Models\Offer;
 use App\Models\Service;
-use App\OfferStatus;
 use App\RequestStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
-    public function index(Request $request): View
+    /**
+     * Browse active services. The optional price range keeps only services that have received at
+     * least one live or accepted offer within it; services have no fixed price of their own.
+     */
+    public function index(CatalogFilterRequest $request): View
     {
         $categories = Category::query()
             ->active()
@@ -22,23 +25,38 @@ class CatalogController extends Controller
             ->orderBy('name')
             ->get();
 
-        $selectedCategory = $request->integer('category') ?: null;
-        $search = trim($request->string('q')->toString());
+        $selectedCategory = $request->categoryId();
+        $search = $request->search();
+        $minimumPrice = $request->minimumPrice();
+        $maximumPrice = $request->maximumPrice();
+        $isPriceFiltered = $minimumPrice !== null || $maximumPrice !== null;
 
         $services = Service::query()
             ->active()
             ->whereHas('category', fn (Builder $query) => $query->where('is_active', true))
             ->with(['category', 'skills'])
             ->withCount('requests')
+            ->withMin(['offers as offer_price_min' => fn (Builder $query) => $query->priceReference()], 'price')
+            ->withMax(['offers as offer_price_max' => fn (Builder $query) => $query->priceReference()], 'price')
             ->when($selectedCategory, fn (Builder $query) => $query->where('category_id', $selectedCategory))
             ->when($search !== '', fn (Builder $query) => $query->where(fn (Builder $inner) => $inner
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('description', 'like', "%{$search}%")))
+            ->when($isPriceFiltered, fn (Builder $query) => $query->whereHas('offers', fn (Builder $offers) => $offers
+                ->priceReference()
+                ->when($minimumPrice !== null, fn (Builder $inner) => $inner->where('offers.price', '>=', $minimumPrice))
+                ->when($maximumPrice !== null, fn (Builder $inner) => $inner->where('offers.price', '<=', $maximumPrice))))
             ->orderBy('name')
             ->paginate(12)
             ->withQueryString();
 
-        return view('catalog.index', compact('categories', 'services', 'selectedCategory', 'search'));
+        $marketPrices = Offer::query()
+            ->priceReference()
+            ->whereHas('request.service', fn (Builder $query) => $query->active()->whereHas('category', fn (Builder $inner) => $inner->where('is_active', true)))
+            ->selectRaw('min(price) as minimum, max(price) as maximum')
+            ->first();
+
+        return view('catalog.index', compact('categories', 'services', 'selectedCategory', 'search', 'minimumPrice', 'maximumPrice', 'isPriceFiltered', 'marketPrices'));
     }
 
     public function show(Service $service): View
@@ -66,7 +84,7 @@ class CatalogController extends Controller
             ->get();
 
         $offerPrices = Offer::query()
-            ->whereIn('status', [OfferStatus::Pending, OfferStatus::Accepted])
+            ->priceReference()
             ->whereHas('request', fn (Builder $query) => $query->where('service_id', $service->id))
             ->selectRaw('min(price) as minimum, max(price) as maximum, avg(price) as average, count(*) as total')
             ->first();

@@ -78,7 +78,10 @@ class AuthenticationTest extends TestCase
 
         $admin = User::factory()->create(['role' => UserRole::Administrator]);
         $this->post(route('admin.login.store'), ['email' => $admin->email, 'password' => 'Test-password-2026!'])
-            ->assertRedirect(route('admin.dashboard'));
+            ->assertRedirect(route('admin.two-factor.setup'));
+        $this->get(route('admin.dashboard'))->assertRedirect(route('admin.login'));
+        $this->get(route('admin.two-factor.setup'))->assertOk();
+        $this->post(route('admin.two-factor.confirm'), ['code' => $this->currentTwoFactorCode($admin)]);
         $this->get(route('admin.dashboard'))->assertOk();
         $this->get(route('homeowner.dashboard'))->assertForbidden();
     }

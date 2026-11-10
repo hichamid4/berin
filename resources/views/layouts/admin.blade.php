@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <meta name="referrer" content="same-origin">
     <title>@yield('title', 'Administration') · BreIn Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,6 +72,7 @@
                     <li class="nav-item"><a href="{{ route('admin.contact-messages.index') }}" class="nav-link {{ request()->routeIs('admin.contact-messages.*') ? 'active' : '' }}"><i class="nav-icon bi bi-envelope-paper"></i><p>Contact messages @if ($newContactMessageCount > 0)<span class="nav-badge badge text-bg-warning ms-auto">{{ $newContactMessageCount }}<span class="visually-hidden"> new</span></span>@endif</p></a></li>
                     <li class="nav-header">Account</li>
                     <li class="nav-item"><a href="{{ route('account.edit') }}" class="nav-link {{ request()->routeIs('account.*') ? 'active' : '' }}"><i class="nav-icon bi bi-person-gear"></i><p>My account</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.security') }}" class="nav-link {{ request()->routeIs('admin.security*') ? 'active' : '' }}"><i class="nav-icon bi bi-shield-lock"></i><p>Security</p></a></li>
                 </ul>
             </nav>
         </div>

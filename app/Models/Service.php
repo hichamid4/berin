@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 #[Fillable(['category_id', 'name', 'description', 'is_active'])]
 class Service extends Model
@@ -39,6 +40,14 @@ class Service extends Model
     public function requests(): HasMany
     {
         return $this->hasMany(ServiceRequest::class);
+    }
+
+    /**
+     * Offers submitted by handymen on requests for this service.
+     */
+    public function offers(): HasManyThrough
+    {
+        return $this->hasManyThrough(Offer::class, ServiceRequest::class, 'service_id', 'request_id');
     }
 
     #[Scope]

@@ -13,6 +13,10 @@
 @section('aside_title', $role === 'handyman' ? 'Your next job is waiting.' : ($role === 'admin' ? 'Keep the marketplace healthy.' : 'Welcome back home.'))
 @section('aside_text', $role === 'handyman' ? 'Sign in to see requests that match your skills and track your offers.' : ($role === 'admin' ? 'Manage users, the catalog and skills, and monitor platform activity.' : 'Sign in to follow your requests, compare offers and book trusted handymen.'))
 
+@if ($role === 'admin')
+    @push('meta')<meta name="robots" content="noindex, nofollow, noarchive">@endpush
+@endif
+
 @section('content')
     @if ($role !== 'admin')
         <div class="role-switch mb-4">
@@ -36,7 +40,11 @@
             <input class="form-control form-control-lg @error('password') is-invalid @enderror" id="password" name="password" type="password" required autocomplete="current-password">
             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
-        <div class="form-check mb-4"><input class="form-check-input" id="remember" type="checkbox" name="remember" value="1"><label class="form-check-label" for="remember">Keep me signed in</label></div>
+        @if ($role !== 'admin')
+            <div class="form-check mb-4"><input class="form-check-input" id="remember" type="checkbox" name="remember" value="1"><label class="form-check-label" for="remember">Keep me signed in</label></div>
+        @else
+            <p class="small text-secondary mb-4"><i class="bi bi-phone me-1"></i>After your password you will be asked for a code from your authenticator app.</p>
+        @endif
         <button class="btn btn-primary btn-lg w-100" type="submit">Sign in</button>
     </form>
     @if ($role !== 'admin')

@@ -18,9 +18,10 @@ BreIn is a responsive home-services marketplace for homeowners and handymen. Thi
 5. Optionally load the reference catalog and fictional demonstration data (not seeded in production): `php artisan db:seed`. Demo accounts use `@example.test` addresses and the password `Demo-password-2026!`. The seeders are repeatable and never delete data.
 6. Install frontend dependencies and build assets: `npm install` and `npm run build`.
 7. Configure email delivery (see below).
-8. Start the site with `php artisan serve`.
+8. Generate the private administration path: `php artisan app:admin-path --generate` (see *Administrator access*).
+9. Start the site with `php artisan serve`.
 
-Create the first platform administrator from a trusted terminal with `php artisan app:create-administrator`.
+Create the first platform administrator from a trusted terminal with `php artisan app:create-administrator`. The administrator sets up an authenticator app at their first sign-in.
 
 ## Email delivery (verification and password reset)
 
@@ -55,13 +56,40 @@ Verification links are signed and expire after 60 minutes. They work even if ope
 
 - Homeowners: `/login` and `/register/homeowner`
 - Handymen: `/handyman/login` and `/register/handyman`
-- Administrator: `/admin/login`
+- Administrator: a private address that is not linked anywhere on the website (see *Administrator access* below)
 
 Passwords must be at least 8 characters. Homeowners and handymen must give a phone number in international format (Moroccan numbers may be typed as `06…`); it is used for WhatsApp contact after an offer is accepted. Role and active-account checks run on protected server routes. Administrator accounts cannot be self-registered from the website.
 
+## Administrator access
+
+The administration area is not linked from the public website and is not served at `/admin`. It lives under a private path stored only in your local `.env` (`ADMIN_PATH`); never commit or publish its value. The path only hides the sign-in page. Access still requires the password, an authenticator-app code, the administrator role and an active, verified account.
+
+**One-time setup on each installation:**
+
+1. `php artisan app:admin-path --generate` writes a random `ADMIN_PATH` to `.env`. Then run `php artisan config:clear` (and `php artisan route:clear` if routes are cached) and restart the server.
+2. `php artisan app:admin-path --show` prints the private sign-in URL. Bookmark it; don't share it.
+3. Sign in there with your administrator email and password. On the first sign-in you are asked to scan a QR code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, Aegis…) and confirm a 6-digit code.
+4. Save the 8 recovery codes shown once afterwards (password manager or printed copy).
+
+From then on, every administrator sign-in asks for the password and then the current code from the app. Administrators are never kept signed in with a "remember me" cookie. Password and code attempts are rate-limited, and failures are logged in the activity monitor.
+
+**Recovery (avoid lock-out):**
+
+- **Lost phone:** sign in with one recovery code (each works once), then open **Admin → Security** and generate new codes.
+- **Lost phone and recovery codes:** on the server, run `php artisan app:admin-two-factor reset you@example.com` (it asks for confirmation). Then sign in with your password and enrol a new phone.
+- **Who still needs to enrol:** `php artisan app:admin-two-factor status`.
+- **Forgot the private address:** `php artisan app:admin-path --show`.
+- **Change the address** (for example if it was shared): `php artisan app:admin-path --generate --force`.
+
+Automated tests use their own fake path from `phpunit.xml`, never your real one. See Section 11.7 of the functional specification for the full design and its limitations.
+
+## Service catalog price filter
+
+The **Services** page can be filtered by offer price in MAD. Services have no fixed price, so the filter uses the prices handymen have actually offered. It keeps a service when at least one **pending or accepted** offer falls in the range. Withdrawn, declined and superseded offers are ignored, the same rule as the price range on each service page. Each service card shows its current offer range.
+
 ## Contact Us messages
 
-The public `/contact` form stores messages in the `contact_messages` table; nothing is emailed. Administrators handle them under **Admin → Contact messages** (`/admin/contact-messages`). From there they can search, filter by status, open a message, mark it new, read or resolved, and reply from their own email app. Accepted submissions are limited to 3 per minute and 10 per day per IP address; failed validation attempts don't count, and a separate 10-requests-per-minute throttle stops floods. A hidden honeypot field and a 10-minute duplicate check stop spam and double submissions. Messages are never deleted automatically; the retention period is still an open decision (see Section 11.6 of the functional specification).
+The public `/contact` form stores messages in the `contact_messages` table; nothing is emailed. Administrators handle them under **Admin → Contact messages**. From there they can search, filter by status, open a message, mark it new, read or resolved, and reply from their own email app. Accepted submissions are limited to 3 per minute and 10 per day per IP address; failed validation attempts don't count, and a separate 10-requests-per-minute throttle stops floods. A hidden honeypot field and a 10-minute duplicate check stop spam and double submissions. Messages are never deleted automatically; the retention period is still an open decision (see Section 11.6 of the functional specification).
 
 **Placeholder:** the email shown on the Contact page (`contact@brein.example`) is not a real mailbox. Replace it in `resources/views/pages/contact.blade.php` when the real support address is known.
 

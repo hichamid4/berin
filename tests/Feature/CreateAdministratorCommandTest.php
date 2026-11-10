@@ -30,8 +30,11 @@ class CreateAdministratorCommandTest extends TestCase
         $this->post(route('admin.login.store'), [
             'email' => 'admin@example.test',
             'password' => 'Secure-admin-password-2026!',
-        ])->assertRedirect(route('admin.dashboard'));
+        ])->assertRedirect(route('admin.two-factor.setup'));
 
+        $this->get(route('admin.two-factor.setup'))->assertOk();
+        $this->post(route('admin.two-factor.confirm'), ['code' => $this->currentTwoFactorCode($administrator)])
+            ->assertRedirect(route('admin.security'));
         $this->get(route('admin.dashboard'))->assertOk();
     }
 }

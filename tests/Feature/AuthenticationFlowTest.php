@@ -142,13 +142,29 @@ class AuthenticationFlowTest extends TestCase
 
     #[TestWith([UserRole::Homeowner, 'login.store', 'homeowner.dashboard'])]
     #[TestWith([UserRole::Handyman, 'handyman.login.store', 'handyman.dashboard'])]
-    #[TestWith([UserRole::Administrator, 'admin.login.store', 'admin.dashboard'])]
-    public function test_each_role_signs_in_and_out(UserRole $role, string $loginRoute, string $dashboard): void
+    public function test_homeowners_and_handymen_sign_in_and_out(UserRole $role, string $loginRoute, string $dashboard): void
     {
         $user = User::factory()->role($role)->create();
 
         $this->post(route($loginRoute), ['email' => $user->email, 'password' => 'Test-password-2026!'])->assertRedirect(route($dashboard));
         $this->assertAuthenticatedAs($user);
+
+        $this->post(route('logout'))->assertRedirect(route('home'));
+        $this->assertGuest();
+    }
+
+    public function test_an_administrator_password_alone_does_not_sign_in(): void
+    {
+        $administrator = User::factory()->role(UserRole::Administrator)->create();
+
+        $this->post(route('admin.login.store'), ['email' => $administrator->email, 'password' => 'Test-password-2026!'])
+            ->assertRedirect(route('admin.two-factor.setup'));
+        $this->assertGuest();
+
+        $this->get(route('admin.two-factor.setup'))->assertOk();
+        $this->post(route('admin.two-factor.confirm'), ['code' => $this->currentTwoFactorCode($administrator)])
+            ->assertRedirect(route('admin.security'));
+        $this->assertAuthenticatedAs($administrator);
 
         $this->post(route('logout'))->assertRedirect(route('home'));
         $this->assertGuest();
@@ -202,7 +218,7 @@ class AuthenticationFlowTest extends TestCase
             ->assertSessionHas('success');
         $this->assertSame('+212722334455', $homeowner->fresh()->phone_e164);
 
-        $this->actingAs($administrator)->put(route('account.profile.update'), $this->profile($administrator, ['phone_e164' => '']))
+        $this->actingAsAdministrator($administrator)->put(route('account.profile.update'), $this->profile($administrator, ['phone_e164' => '']))
             ->assertSessionHas('success');
         $this->assertNull($administrator->fresh()->phone_e164);
     }

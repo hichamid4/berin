@@ -17,6 +17,24 @@ class ContactMessageTest extends TestCase
     use DatabaseTransactions;
 
     /**
+     * Messages already in the development database before the test (for example a QA message),
+     * so counts only measure what the test itself stored.
+     */
+    private int $existingMessages = 0;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->existingMessages = ContactMessage::query()->count();
+    }
+
+    private function assertNewMessageCount(int $expected): void
+    {
+        $this->assertDatabaseCount('contact_messages', $this->existingMessages + $expected);
+    }
+
+    /**
      * @param  array<string, string>  $overrides
      * @return array<string, string>
      */
@@ -50,7 +68,7 @@ class ContactMessageTest extends TestCase
             ->assertSessionHas('contact_message_sent', true)
             ->assertSessionHasNoErrors();
 
-        $message = ContactMessage::query()->sole();
+        $message = ContactMessage::query()->where('email', 'salma.bennani@example.test')->sole();
         $this->assertSame('Salma Bennani', $message->name);
         $this->assertSame('salma.bennani@example.test', $message->email);
         $this->assertSame('Question about posting a request', $message->subject);
@@ -65,12 +83,12 @@ class ContactMessageTest extends TestCase
     {
         $this->post(route('contact.store'), $this->validMessage(['phone' => '+212612345678', 'status' => 'resolved']));
 
-        $columns = array_keys((array) DB::table('contact_messages')->sole());
+        $columns = array_keys((array) DB::table('contact_messages')->where('email', 'salma.bennani@example.test')->sole());
         $this->assertEqualsCanonicalizing(
             ['id', 'name', 'email', 'subject', 'message', 'status', 'read_at', 'resolved_at', 'handled_by', 'created_at', 'updated_at'],
             $columns,
         );
-        $this->assertSame(ContactMessageStatus::New, ContactMessage::query()->sole()->status);
+        $this->assertSame(ContactMessageStatus::New, ContactMessage::query()->where('email', 'salma.bennani@example.test')->sole()->status);
     }
 
     public function test_missing_fields_are_rejected_with_clear_messages(): void
@@ -84,7 +102,7 @@ class ContactMessageTest extends TestCase
                 'message' => 'Please write your message.',
             ]);
 
-        $this->assertDatabaseCount('contact_messages', 0);
+        $this->assertNewMessageCount(0);
     }
 
     public function test_invalid_and_oversized_values_are_rejected(): void
@@ -104,7 +122,7 @@ class ContactMessageTest extends TestCase
         $this->from(route('contact'))->post(route('contact.store'), $this->validMessage(['message' => str_repeat('a', 5001)]))
             ->assertSessionHasErrors(['message' => 'Your message may not be longer than 5,000 characters.']);
 
-        $this->assertDatabaseCount('contact_messages', 0);
+        $this->assertNewMessageCount(0);
     }
 
     public function test_validation_errors_keep_the_visitor_input_and_render_on_the_form(): void
@@ -124,7 +142,7 @@ class ContactMessageTest extends TestCase
             ->assertSessionHas('contact_message_sent', true)
             ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseCount('contact_messages', 0);
+        $this->assertNewMessageCount(0);
     }
 
     public function test_an_identical_message_sent_twice_is_stored_once(): void
@@ -132,12 +150,12 @@ class ContactMessageTest extends TestCase
         $this->post(route('contact.store'), $this->validMessage())->assertRedirect(route('contact'));
         $this->post(route('contact.store'), $this->validMessage())->assertRedirect(route('contact'))->assertSessionHas('contact_message_sent', true);
 
-        $this->assertDatabaseCount('contact_messages', 1);
+        $this->assertNewMessageCount(1);
 
         $this->travel(ContactMessage::DUPLICATE_WINDOW_MINUTES + 1)->minutes();
         $this->post(route('contact.store'), $this->validMessage());
 
-        $this->assertDatabaseCount('contact_messages', 2);
+        $this->assertNewMessageCount(2);
     }
 
     public function test_repeated_submissions_are_rate_limited_per_visitor(): void
@@ -153,13 +171,13 @@ class ContactMessageTest extends TestCase
             ->assertSessionHasErrors(['message' => 'You have sent several messages in the last minute. Please wait a little before sending another one.'])
             ->assertSessionHasInput('subject', 'Question number 4');
 
-        $this->assertDatabaseCount('contact_messages', 3);
+        $this->assertNewMessageCount(3);
         $this->assertDatabaseMissing('contact_messages', ['subject' => 'Question number 4']);
 
         $this->travel(61)->seconds();
         $this->from(route('contact'))->post(route('contact.store'), $this->validMessage(['subject' => 'Question number 5']))
             ->assertSessionHasNoErrors();
-        $this->assertDatabaseCount('contact_messages', 4);
+        $this->assertNewMessageCount(4);
     }
 
     public function test_rejected_submissions_do_not_use_up_the_message_quota(): void
@@ -173,7 +191,7 @@ class ContactMessageTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertSessionHas('contact_message_sent', true);
 
-        $this->assertDatabaseCount('contact_messages', 1);
+        $this->assertNewMessageCount(1);
     }
 
     public function test_the_daily_quota_applies_after_the_minute_quota_resets(): void
@@ -190,7 +208,7 @@ class ContactMessageTest extends TestCase
             ->assertRedirect(route('contact'))
             ->assertSessionHasErrors(['message' => 'You have sent several messages today. Please wait a little before sending another one.']);
 
-        $this->assertDatabaseCount('contact_messages', 10);
+        $this->assertNewMessageCount(10);
     }
 
     public function test_a_flood_of_requests_is_stopped_before_validation_even_without_a_referrer(): void
@@ -203,7 +221,7 @@ class ContactMessageTest extends TestCase
             ->assertRedirect(route('contact'))
             ->assertSessionHasErrors(['message' => 'Too many attempts from your connection. Please wait a minute before trying again.']);
 
-        $this->assertDatabaseCount('contact_messages', 0);
+        $this->assertNewMessageCount(0);
     }
 
     public function test_search_treats_percent_and_underscore_literally(): void
@@ -212,7 +230,7 @@ class ContactMessageTest extends TestCase
         ContactMessage::factory()->create(['subject' => 'Discount of 50% on plumbing?']);
         ContactMessage::factory()->create(['subject' => 'Painting quote 500 MAD']);
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.index', ['q' => '50%']))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.index', ['q' => '50%']))
             ->assertSee('Discount of 50% on plumbing?')
             ->assertDontSee('Painting quote 500 MAD');
     }
@@ -241,7 +259,7 @@ class ContactMessageTest extends TestCase
         $older = ContactMessage::factory()->create(['subject' => 'Older question', 'created_at' => now()->subDays(3)]);
         $newer = ContactMessage::factory()->resolved()->create(['subject' => 'Newer question']);
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.index'))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.index', ['q' => 'er question']))
             ->assertOk()
             ->assertSeeInOrder(['Newer question', 'Older question'])
             ->assertSee($older->created_at->translatedFormat('j M Y'))
@@ -257,22 +275,22 @@ class ContactMessageTest extends TestCase
         ContactMessage::factory()->read()->create(['subject' => 'Invoice question', 'email' => 'karim.tahiri@example.test']);
         ContactMessage::factory()->resolved()->create(['subject' => 'Password reset problem']);
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.index', ['q' => 'kitchen']))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.index', ['q' => 'kitchen']))
             ->assertOk()->assertSee('Leaking kitchen tap')->assertDontSee('Invoice question')->assertDontSee('Password reset problem');
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.index', ['q' => 'karim.tahiri']))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.index', ['q' => 'karim.tahiri']))
             ->assertSee('Invoice question')->assertDontSee('Leaking kitchen tap');
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.index', ['q' => 'finish the job']))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.index', ['q' => 'finish the job']))
             ->assertSee('Leaking kitchen tap');
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.index', ['status' => 'resolved']))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.index', ['status' => 'resolved']))
             ->assertSee('Password reset problem')->assertDontSee('Leaking kitchen tap')->assertDontSee('Invoice question');
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.index', ['status' => 'read', 'q' => 'kitchen']))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.index', ['status' => 'read', 'q' => 'kitchen']))
             ->assertSee('No message matches these filters.');
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.index', ['status' => 'unknown']))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.index', ['status' => 'unknown']))
             ->assertOk()->assertSee('Leaking kitchen tap')->assertSee('Invoice question');
     }
 
@@ -284,7 +302,7 @@ class ContactMessageTest extends TestCase
             'message' => "First line.\nSecond line with <script>alert(1)</script>",
         ]);
 
-        $this->actingAs($administrator)->get(route('admin.contact-messages.show', $message))
+        $this->actingAsAdministrator($administrator)->get(route('admin.contact-messages.show', $message))
             ->assertOk()
             ->assertSee('Handyman profile photo')
             ->assertSee($message->email)
@@ -302,7 +320,7 @@ class ContactMessageTest extends TestCase
         $message = ContactMessage::factory()->create();
         $detail = route('admin.contact-messages.show', $message);
 
-        $this->actingAs($administrator)->from($detail)->patch(route('admin.contact-messages.status', $message), ['status' => 'read'])
+        $this->actingAsAdministrator($administrator)->from($detail)->patch(route('admin.contact-messages.status', $message), ['status' => 'read'])
             ->assertRedirect($detail)->assertSessionHas('success', 'The message was marked as Read.');
         $message->refresh();
         $this->assertSame(ContactMessageStatus::Read, $message->status);
@@ -310,13 +328,13 @@ class ContactMessageTest extends TestCase
         $this->assertNull($message->resolved_at);
         $this->assertSame($administrator->id, $message->handled_by);
 
-        $this->actingAs($administrator)->from($detail)->patch(route('admin.contact-messages.status', $message), ['status' => 'resolved'])
+        $this->actingAsAdministrator($administrator)->from($detail)->patch(route('admin.contact-messages.status', $message), ['status' => 'resolved'])
             ->assertSessionHas('success', 'The message was marked as Resolved.');
         $message->refresh();
         $this->assertSame(ContactMessageStatus::Resolved, $message->status);
         $this->assertNotNull($message->resolved_at);
 
-        $this->actingAs($administrator)->from($detail)->patch(route('admin.contact-messages.status', $message), ['status' => 'read']);
+        $this->actingAsAdministrator($administrator)->from($detail)->patch(route('admin.contact-messages.status', $message), ['status' => 'read']);
         $message->refresh();
         $this->assertSame(ContactMessageStatus::Read, $message->status);
         $this->assertNull($message->resolved_at);
@@ -336,12 +354,12 @@ class ContactMessageTest extends TestCase
         $administrator = User::factory()->role(UserRole::Administrator)->create();
         $message = ContactMessage::factory()->create();
 
-        $this->actingAs($administrator)->patch(route('admin.contact-messages.status', $message), ['status' => 'resolved']);
+        $this->actingAsAdministrator($administrator)->patch(route('admin.contact-messages.status', $message), ['status' => 'resolved']);
         $message->refresh();
         $this->assertSame(ContactMessageStatus::Resolved, $message->status);
         $this->assertNotNull($message->read_at);
 
-        $this->actingAs($administrator)->patch(route('admin.contact-messages.status', $message), ['status' => 'new']);
+        $this->actingAsAdministrator($administrator)->patch(route('admin.contact-messages.status', $message), ['status' => 'new']);
         $message->refresh();
         $this->assertSame(ContactMessageStatus::New, $message->status);
         $this->assertNull($message->read_at);
@@ -353,14 +371,14 @@ class ContactMessageTest extends TestCase
         $administrator = User::factory()->role(UserRole::Administrator)->create();
         $message = ContactMessage::factory()->read()->create();
 
-        $this->actingAs($administrator)->patch(route('admin.contact-messages.status', $message), ['status' => 'archived'])
+        $this->actingAsAdministrator($administrator)->patch(route('admin.contact-messages.status', $message), ['status' => 'archived'])
             ->assertSessionHasErrors(['status' => 'Choose a valid status: new, read or resolved.']);
 
-        $this->actingAs($administrator)->patch(route('admin.contact-messages.status', $message), ['status' => 'read'])
+        $this->actingAsAdministrator($administrator)->patch(route('admin.contact-messages.status', $message), ['status' => 'read'])
             ->assertSessionHas('success', 'This message is already marked as Read.');
 
         $this->assertSame(ContactMessageStatus::Read, $message->fresh()->status);
-        $this->assertSame(0, ActivityEvent::query()->where('subject_type', 'contact_message')->count());
+        $this->assertSame(0, ActivityEvent::query()->where('subject_type', 'contact_message')->where('subject_id', $message->id)->count());
     }
 
     public function test_the_sidebar_shows_how_many_messages_are_new(): void
@@ -370,7 +388,7 @@ class ContactMessageTest extends TestCase
         ContactMessage::factory()->count(2)->create();
         ContactMessage::factory()->resolved()->create();
 
-        $this->actingAs($administrator)->get(route('admin.dashboard'))
+        $this->actingAsAdministrator($administrator)->get(route('admin.dashboard'))
             ->assertOk()
             ->assertSee(route('admin.contact-messages.index'))
             ->assertSee(($newCount + 2).'<span class="visually-hidden"> new</span>', false);
