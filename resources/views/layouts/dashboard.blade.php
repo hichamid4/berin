@@ -32,6 +32,9 @@
             </aside>
             <div class="col-lg-9">
                 <x-flash class="mb-4" />
+                @unless (View::hasSection('inline_errors'))
+                    <x-form-errors class="mb-4" />
+                @endunless
                 @yield('dashboard')
             </div>
         </div>

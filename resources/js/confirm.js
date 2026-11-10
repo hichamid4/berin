@@ -64,6 +64,33 @@ document.addEventListener('submit', (event) => {
     modal.show();
 });
 
+/**
+ * Prevent duplicate submissions (for example a double-click on "Send offer"): once a form is
+ * actually submitting, its submit buttons are disabled and show a sending state.
+ */
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+
+    if (!(form instanceof HTMLFormElement) || event.defaultPrevented || form.method.toLowerCase() === 'get') {
+        return;
+    }
+
+    window.setTimeout(() => {
+        form.querySelectorAll('button[type="submit"]').forEach((button) => {
+            button.disabled = true;
+            button.dataset.originalLabel = button.innerHTML;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Sending…';
+        });
+    }, 0);
+});
+
+window.addEventListener('pageshow', () => {
+    document.querySelectorAll('button[type="submit"][data-original-label]').forEach((button) => {
+        button.disabled = false;
+        button.innerHTML = button.dataset.originalLabel;
+    });
+});
+
 document.addEventListener('click', async (event) => {
     const trigger = event.target.closest('[data-dependency-url]');
 

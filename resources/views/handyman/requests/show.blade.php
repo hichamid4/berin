@@ -4,6 +4,7 @@
 @section('heading', $serviceRequest->title)
 @section('subtitle', $serviceRequest->service->category->name.' › '.$serviceRequest->service->name.' · '.$serviceRequest->service_city)
 @section('hero_actions')<a class="btn btn-outline-light" href="{{ route('handyman.requests.index') }}"><i class="bi bi-arrow-left me-1"></i>All matching requests</a>@endsection
+@section('inline_errors', 'offer-form')
 
 @section('dashboard')
     <div class="row g-4 mb-4">
@@ -91,6 +92,7 @@
             <div class="card-body p-4">
                 <h2 class="h5 mb-1">Send an offer</h2>
                 <p class="small text-secondary mb-4">Prices are in Moroccan dirham. The end date cannot be before the start date.</p>
+                <x-form-errors class="mb-4" title="Your offer was not sent. Please correct the following:" />
                 @include('handyman.offers.fields', ['offer' => new \App\Models\Offer(), 'remainingPhotos' => \App\Models\Offer::MAX_PHOTOS])
             </div>
             <div class="card-footer bg-transparent d-flex justify-content-end"><button class="btn btn-primary" type="submit"><i class="bi bi-send me-1"></i>Send offer</button></div>

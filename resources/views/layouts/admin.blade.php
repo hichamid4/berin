@@ -95,6 +95,7 @@
         <div class="app-content">
             <div class="container-fluid">
                 <x-flash class="mb-4" />
+                <x-form-errors class="mb-4" />
                 @yield('content')
             </div>
         </div>

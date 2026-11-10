@@ -31,12 +31,13 @@
             </div>
             <div class="col-12">
                 <label class="form-label" for="title">Title</label>
-                <input class="form-control @error('title') is-invalid @enderror" id="title" name="title" value="{{ old('title', $serviceRequest->title) }}" maxlength="180" required placeholder="e.g. Leaking kitchen tap and damp cabinet">
+                <input class="form-control @error('title') is-invalid @enderror" id="title" name="title" value="{{ old('title', $serviceRequest->title) }}" maxlength="180" minlength="8" required placeholder="e.g. Leaking kitchen tap and damp cabinet">
                 @error('title')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-12">
                 <label class="form-label" for="description">Description</label>
-                <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="5" required placeholder="What needs to be done, sizes, materials you already have, access constraints…">{{ old('description', $serviceRequest->description) }}</textarea>
+                <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="5" required minlength="20" maxlength="5000" placeholder="What needs to be done, sizes, materials you already have, access constraints…">{{ old('description', $serviceRequest->description) }}</textarea>
+                <div class="form-text">At least 20 characters.</div>
                 @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-8">

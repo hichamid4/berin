@@ -106,8 +106,66 @@ class MarketplaceWorkflowTest extends TestCase
             ->assertRedirect(route('handyman.requests.show', $request));
         $this->assertDatabaseHas('offers', ['request_id' => $request->id, 'handyman_id' => $this->handyman->user_id, 'price' => '850.50', 'status' => 'pending']);
 
-        $this->actingAs($this->handyman->user)->post(route('handyman.offers.store', $request), $payload)->assertForbidden();
+        $this->actingAs($this->handyman->user)->post(route('handyman.offers.store', $request), $payload)
+            ->assertSessionHas('error', 'You already sent an offer for this request. You can edit or withdraw it below; a second offer was not created.');
         $this->assertSame(1, $request->offers()->count());
+    }
+
+    public function test_submitted_offer_is_shown_to_the_handyman_and_the_owning_homeowner(): void
+    {
+        $request = $this->openRequest();
+
+        $this->actingAs($this->handyman->user)->post(route('handyman.offers.store', $request), [
+            'price' => '640',
+            'start_date' => now()->addDays(4)->toDateString(),
+            'end_date' => now()->addDays(4)->toDateString(),
+            'description' => 'Full deep cleaning with eco-friendly products, two people, one day.',
+        ])->assertRedirect(route('handyman.requests.show', $request))->assertSessionHas('success');
+
+        $offer = $request->offers()->sole();
+        $this->assertSame($this->handyman->user_id, $offer->handyman_id);
+        $this->assertSame(OfferStatus::Pending, $offer->status);
+        $this->assertSame('640.00', $offer->price);
+
+        $this->actingAs($this->handyman->user)->get(route('handyman.requests.show', $request))
+            ->assertOk()->assertSee('Your offer')->assertSee('Pending')->assertSeeInOrder(['Offers so far', '1']);
+        $this->actingAs($this->handyman->user)->get(route('handyman.requests.index'))
+            ->assertOk()->assertSee('You sent an offer')->assertSee('1 offer');
+
+        $this->actingAs($this->homeowner->user)->get(route('homeowner.requests.show', $request))
+            ->assertOk()
+            ->assertSee($this->handyman->user->fullName())
+            ->assertSee('640')
+            ->assertSee('Accept offer')
+            ->assertSee('Decline');
+        $this->actingAs($this->homeowner->user)->get(route('homeowner.dashboard'))->assertOk()->assertSee($this->handyman->user->fullName());
+    }
+
+    public function test_rejected_offer_returns_to_the_form_with_a_visible_summary_and_saves_nothing(): void
+    {
+        $request = $this->openRequest();
+
+        $this->actingAs($this->handyman->user)
+            ->from(route('handyman.requests.show', $request))
+            ->post(route('handyman.offers.store', $request), [
+                'price' => '500',
+                'start_date' => now()->addDays(4)->toDateString(),
+                'end_date' => now()->addDays(4)->toDateString(),
+                'description' => 'I can do it',
+            ])
+            ->assertRedirect(route('handyman.requests.show', $request).'#offer')
+            ->assertSessionHasErrors(['description' => 'The description field must be at least 20 characters.']);
+
+        $this->assertSame(0, $request->offers()->count());
+
+        $this->actingAs($this->handyman->user)
+            ->from(route('handyman.requests.show', $request))
+            ->followingRedirects()
+            ->post(route('handyman.offers.store', $request), ['price' => '', 'description' => 'Too short'])
+            ->assertOk()
+            ->assertSee('Your offer was not sent. Please correct the following:')
+            ->assertSee('The price field is required.');
+        $this->assertSame(0, $request->offers()->count());
     }
 
     public function test_offer_end_date_cannot_precede_start_date(): void

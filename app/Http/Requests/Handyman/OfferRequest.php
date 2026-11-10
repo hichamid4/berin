@@ -3,7 +3,9 @@
 namespace App\Http\Requests\Handyman;
 
 use App\Actions\Marketplace\PhotoStorage;
+use App\Exceptions\BusinessRuleViolation;
 use App\Models\Offer;
+use App\Models\ServiceRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 class OfferRequest extends FormRequest
@@ -30,6 +32,39 @@ class OfferRequest extends FormRequest
             'photos' => ['nullable', 'array', 'max:'.Offer::MAX_PHOTOS],
             'photos.*' => PhotoStorage::rules(),
         ];
+    }
+
+    /**
+     * Explain refusals the handyman can understand instead of showing a bare 403 page.
+     */
+    protected function failedAuthorization(): void
+    {
+        $request = $this->route('serviceRequest');
+        $profile = $this->user()?->handymanProfile;
+
+        if ($request instanceof ServiceRequest && $profile !== null) {
+            if ($request->hasActiveOfferFrom($profile)) {
+                throw new BusinessRuleViolation('You already sent an offer for this request. You can edit or withdraw it below; a second offer was not created.');
+            }
+
+            if (! $request->isOpen()) {
+                throw new BusinessRuleViolation('This request is no longer open for offers, so your offer was not sent.');
+            }
+        }
+
+        if ($this->route('offer') instanceof Offer) {
+            throw new BusinessRuleViolation('This offer can no longer be edited because it is not pending or the request is closed.');
+        }
+
+        parent::failedAuthorization();
+    }
+
+    /**
+     * Send the handyman back to the offer form itself, where the field errors are shown.
+     */
+    protected function getRedirectUrl(): string
+    {
+        return strtok(parent::getRedirectUrl(), '#').'#offer';
     }
 
     /**

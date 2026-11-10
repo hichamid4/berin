@@ -4,10 +4,13 @@
 @section('heading', 'Edit your offer')
 @section('subtitle', 'For “'.$offer->request->title.'” · '.$offer->request->service_city)
 
+@section('inline_errors', 'offer-form')
+
 @section('dashboard')
-<form class="card" method="post" enctype="multipart/form-data" action="{{ route('handyman.offers.update', $offer) }}">
+<form class="card" method="post" enctype="multipart/form-data" action="{{ route('handyman.offers.update', $offer) }}" id="offer">
     @csrf @method('PUT')
     <div class="card-body p-4">
+        <x-form-errors class="mb-4" title="Your offer was not updated. Please correct the following:" />
         @include('handyman.offers.fields', ['remainingPhotos' => \App\Models\Offer::MAX_PHOTOS - $offer->photos->count()])
     </div>
     <div class="card-footer bg-transparent d-flex justify-content-end gap-2">

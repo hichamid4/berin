@@ -20,7 +20,8 @@
     </div>
     <div class="col-12">
         <label class="form-label" for="description">What your offer includes</label>
-        <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="4" required placeholder="Work included, materials, guarantee, what the homeowner should prepare…">{{ old('description', $offer->description) }}</textarea>
+        <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="4" required minlength="20" maxlength="5000" placeholder="Work included, materials, guarantee, what the homeowner should prepare…">{{ old('description', $offer->description) }}</textarea>
+        <div class="form-text">At least 20 characters.</div>
         @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-12">
