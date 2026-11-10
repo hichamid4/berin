@@ -39,7 +39,14 @@ return [
 
         'smtp' => [
             'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
+            // Symfony Mailer only accepts "smtp" (STARTTLS when offered, e.g. port 587) or "smtps"
+            // (implicit TLS, port 465). Legacy MAIL_ENCRYPTION-style values are translated.
+            'scheme' => match (strtolower((string) env('MAIL_SCHEME'))) {
+                '', 'null' => null,
+                'tls', 'starttls' => 'smtp',
+                'ssl' => 'smtps',
+                default => env('MAIL_SCHEME'),
+            },
             'url' => env('MAIL_URL'),
             'host' => env('MAIL_HOST', '127.0.0.1'),
             'port' => env('MAIL_PORT', 2525),
@@ -112,7 +119,10 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+        // An unresolved "${APP_NAME}" (APP_NAME defined later in .env) falls back to the application name.
+        'name' => str_contains((string) env('MAIL_FROM_NAME', ''), '${') || blank(env('MAIL_FROM_NAME'))
+            ? env('APP_NAME', 'BreIn')
+            : env('MAIL_FROM_NAME'),
     ],
 
 ];

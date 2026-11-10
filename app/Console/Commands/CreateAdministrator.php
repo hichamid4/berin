@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Requests\Auth\RegisterUserRequest;
 use App\Models\User;
 use App\UserRole;
 use Illuminate\Console\Attributes\Description;
@@ -38,9 +39,9 @@ class CreateAdministrator extends Command
             return self::FAILURE;
         }
 
-        $password = $this->secret('Password (minimum 12 characters)');
-        if (strlen((string) $password) < 12 || $password !== $this->secret('Confirm password')) {
-            $this->error('The password must match and be at least 12 characters.');
+        $password = $this->secret('Password (minimum '.RegisterUserRequest::PASSWORD_MIN_LENGTH.' characters)');
+        if (strlen((string) $password) < RegisterUserRequest::PASSWORD_MIN_LENGTH || $password !== $this->secret('Confirm password')) {
+            $this->error('The password must match and be at least '.RegisterUserRequest::PASSWORD_MIN_LENGTH.' characters.');
 
             return self::FAILURE;
         }

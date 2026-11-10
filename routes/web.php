@@ -37,6 +37,7 @@ Route::get('/handymen/{handyman}', [HandymanDirectoryController::class, 'show'])
 Route::get('/handymen/{handyman}/photo', [PhotoController::class, 'handymanPhoto'])->name('handymen.photo');
 Route::view('/about', 'pages.about')->name('about');
 Route::view('/contact', 'pages.contact')->name('contact');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/register/{role}', [RegisteredUserController::class, 'create'])->whereIn('role', ['homeowner', 'handyman'])->name('register');
@@ -57,7 +58,6 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])->middleware('throttle:6,1')->name('verification.send');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

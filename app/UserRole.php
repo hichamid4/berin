@@ -16,4 +16,13 @@ enum UserRole: string
             self::Administrator => 'admin.dashboard',
         };
     }
+
+    public function loginRouteName(): string
+    {
+        return match ($this) {
+            self::Homeowner => 'login',
+            self::Handyman => 'handyman.login',
+            self::Administrator => 'admin.login',
+        };
+    }
 }

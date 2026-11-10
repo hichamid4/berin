@@ -173,6 +173,54 @@ class CatalogAdministrationTest extends TestCase
         $this->assertModelExists($service);
     }
 
+    public function test_administrator_creates_edits_and_toggles_a_category(): void
+    {
+        $this->actingAs($this->administrator)->post(route('admin.categories.store'), ['name' => 'Pool & Spa', 'is_active' => '1'])
+            ->assertRedirect(route('admin.categories.index'));
+        $category = Category::query()->where('name', 'Pool & Spa')->firstOrFail();
+
+        $this->actingAs($this->administrator)->put(route('admin.categories.update', $category), ['name' => 'Pool & Spa Care', 'is_active' => '1'])
+            ->assertSessionHas('success');
+        $this->assertSame('Pool & Spa Care', $category->fresh()->name);
+
+        $this->actingAs($this->administrator)->post(route('admin.categories.store'), ['name' => 'Pool & Spa Care'])->assertSessionHasErrors('name');
+
+        $this->actingAs($this->administrator)->patch(route('admin.categories.toggle', $category));
+        $this->assertFalse($category->fresh()->is_active);
+        $this->actingAs($this->administrator)->patch(route('admin.categories.toggle', $category));
+        $this->assertTrue($category->fresh()->is_active);
+    }
+
+    public function test_services_of_an_inactive_category_leave_the_public_catalog(): void
+    {
+        $category = Category::factory()->inactive()->create();
+        $service = Service::factory()->for($category)->create(['name' => 'Hidden catalog service']);
+
+        $this->get(route('services.index'))->assertOk()->assertDontSee('Hidden catalog service');
+        $this->get(route('services.show', $service))->assertNotFound();
+    }
+
+    public function test_administrator_creates_edits_and_toggles_a_skill_with_its_services(): void
+    {
+        $service = Service::factory()->create();
+
+        $this->actingAs($this->administrator)->post(route('admin.skills.store'), [
+            'name' => 'Pool maintenance', 'description' => 'Cleaning and chemical balance.', 'is_active' => '1', 'service_ids' => [$service->id],
+        ])->assertRedirect(route('admin.skills.index'));
+        $skill = Skill::query()->where('name', 'Pool maintenance')->firstOrFail();
+        $this->assertSame([$service->id], $skill->services()->pluck('services.id')->all());
+
+        $this->actingAs($this->administrator)->put(route('admin.skills.update', $skill), [
+            'name' => 'Pool & spa maintenance', 'is_active' => '1', 'service_ids' => [],
+        ])->assertSessionHas('success');
+        $this->assertSame('Pool & spa maintenance', $skill->fresh()->name);
+        $this->assertSame(0, $skill->services()->count());
+        $this->assertModelExists($service);
+
+        $this->actingAs($this->administrator)->patch(route('admin.skills.toggle', $skill));
+        $this->assertFalse($skill->fresh()->is_active);
+    }
+
     public function test_unused_category_is_deleted_with_its_unused_services(): void
     {
         $skill = Skill::factory()->create();

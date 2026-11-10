@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Account;
 
+use App\Http\Requests\Auth\RegisterUserRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePasswordRequest extends FormRequest
@@ -18,7 +19,7 @@ class UpdatePasswordRequest extends FormRequest
     {
         return [
             'current_password' => ['required', 'string', 'current_password'],
-            'password' => ['required', 'string', 'confirmed', 'min:12', 'different:current_password'],
+            'password' => ['required', 'string', 'confirmed', 'min:'.RegisterUserRequest::PASSWORD_MIN_LENGTH, 'different:current_password'],
         ];
     }
 }

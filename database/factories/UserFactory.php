@@ -24,7 +24,7 @@ class UserFactory extends Factory
             'role' => UserRole::Homeowner,
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'username' => fake()->unique()->userName(),
+            'username' => str_replace('.', '-', fake()->unique()->userName()),
             'email' => fake()->unique()->safeEmail(),
             'phone_e164' => null,
             'email_verified_at' => now(),

@@ -9,8 +9,8 @@
             <div class="col-sm-6"><label class="form-label" for="last_name">Last name</label><input class="form-control @error('last_name') is-invalid @enderror" id="last_name" name="last_name" value="{{ old('last_name', $user->last_name) }}" required autocomplete="family-name">@error('last_name')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
             <div class="col-sm-6"><label class="form-label" for="username">Username</label><input class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username', $user->username) }}" required autocomplete="username">@error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
             <div class="col-sm-6"><label class="form-label" for="email">Email address</label><input class="form-control @error('email') is-invalid @enderror" id="email" name="email" type="email" value="{{ old('email', $user->email) }}" required autocomplete="email">@error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-            <div class="col-sm-6"><label class="form-label" for="phone_e164">Phone {{ $user->isHandyman() ? '(WhatsApp)' : '' }}</label><input class="form-control @error('phone_e164') is-invalid @enderror" id="phone_e164" name="phone_e164" type="tel" value="{{ old('phone_e164', $user->phone_e164) }}" placeholder="+212612345678" autocomplete="tel">@error('phone_e164')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                @if ($user->isHandyman())<div class="form-text">Homeowners who accept your offer contact you on WhatsApp with this number.</div>@endif
+            <div class="col-sm-6"><label class="form-label" for="phone_e164">Phone {{ $user->isAdministrator() ? '(optional)' : '(WhatsApp)' }}</label><input class="form-control @error('phone_e164') is-invalid @enderror" id="phone_e164" name="phone_e164" type="tel" inputmode="tel" value="{{ old('phone_e164', $user->phone_e164) }}" placeholder="+212 6 12 34 56 78" @required(! $user->isAdministrator()) autocomplete="tel">@error('phone_e164')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @if ($user->isHandyman())<div class="form-text">Homeowners who accept your offer contact you on WhatsApp with this number.</div>@elseif ($user->isHomeowner())<div class="form-text">Moroccan numbers can be typed as 06… or +212 6….</div>@endif
             </div>
             @if ($profile ?? null)
                 <div class="col-sm-6"><label class="form-label" for="city">City</label><input class="form-control @error('city') is-invalid @enderror" id="city" name="city" value="{{ old('city', $profile->city) }}" autocomplete="address-level2">@error('city')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
@@ -38,11 +38,11 @@
     @csrf @method('PUT')
     <div class="card-body p-4">
         <h2 class="h5 mb-1">Password</h2>
-        <p class="text-secondary small mb-4">Use at least 12 characters. Other devices are signed out after the change.</p>
+        <p class="text-secondary small mb-4">Use at least 8 characters. Other devices are signed out after the change.</p>
         <div class="row g-3">
             <div class="col-sm-4"><label class="form-label" for="current_password">Current password</label><input class="form-control @error('current_password') is-invalid @enderror" id="current_password" name="current_password" type="password" required autocomplete="current-password">@error('current_password')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-            <div class="col-sm-4"><label class="form-label" for="password">New password</label><input class="form-control @error('password') is-invalid @enderror" id="password" name="password" type="password" minlength="12" required autocomplete="new-password">@error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-            <div class="col-sm-4"><label class="form-label" for="password_confirmation">Confirm new password</label><input class="form-control" id="password_confirmation" name="password_confirmation" type="password" minlength="12" required autocomplete="new-password"></div>
+            <div class="col-sm-4"><label class="form-label" for="password">New password</label><input class="form-control @error('password') is-invalid @enderror" id="password" name="password" type="password" minlength="8" required autocomplete="new-password">@error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+            <div class="col-sm-4"><label class="form-label" for="password_confirmation">Confirm new password</label><input class="form-control" id="password_confirmation" name="password_confirmation" type="password" minlength="8" required autocomplete="new-password"></div>
         </div>
     </div>
     <div class="card-footer bg-transparent d-flex justify-content-end"><button class="btn btn-primary" type="submit"><i class="bi bi-key me-1"></i>Change password</button></div>

@@ -222,6 +222,78 @@ class MarketplaceWorkflowTest extends TestCase
         $this->actingAs($this->handyman->user)->post(route('homeowner.favorites.store', $this->handyman))->assertForbidden();
     }
 
+    public function test_homeowner_edits_an_open_request_but_not_a_booked_one(): void
+    {
+        $request = $this->openRequest();
+        $payload = [
+            'title' => 'Updated: leaking tap and cabinet',
+            'description' => 'The leak got worse; the cabinet floor is now soaked.',
+            'service_location' => 'Updated private address',
+            'service_city' => 'Rabat',
+            'desired_start_date' => now()->addDays(2)->toDateString(),
+        ];
+
+        $this->actingAs($this->homeowner->user)->put(route('homeowner.requests.update', $request), $payload)->assertSessionHas('success');
+        $this->assertSame('Rabat', $request->fresh()->service_city);
+
+        $this->actingAs($this->homeowner->user)->post(route('homeowner.offers.accept', $this->offerFrom($this->handyman, $request)));
+        $this->actingAs($this->homeowner->user)->put(route('homeowner.requests.update', $request), [...$payload, 'service_city' => 'Fes'])->assertForbidden();
+        $this->assertSame('Rabat', $request->fresh()->service_city);
+    }
+
+    public function test_homeowner_declines_an_offer_and_whatsapp_stays_hidden_before_acceptance(): void
+    {
+        $request = $this->openRequest();
+        $offer = $this->offerFrom($this->handyman, $request);
+
+        $this->actingAs($this->homeowner->user)->get(route('homeowner.requests.show', $request))->assertOk()->assertDontSee('wa.me', false);
+
+        $this->actingAs($this->homeowner->user)->post(route('homeowner.offers.decline', $offer))->assertSessionHas('success');
+        $this->assertSame(OfferStatus::Declined, $offer->fresh()->status);
+        $this->assertSame(RequestStatus::Open, $request->fresh()->status);
+    }
+
+    public function test_offer_photos_are_stored_and_only_participants_can_open_request_and_offer_photos(): void
+    {
+        Storage::fake('local');
+        $request = $this->openRequest();
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+
+        $this->actingAs($this->homeowner->user)->put(route('homeowner.requests.update', $request), [
+            'title' => $request->title,
+            'description' => $request->description,
+            'service_location' => $request->service_location,
+            'service_city' => $request->service_city,
+            'desired_start_date' => now()->addDays(3)->toDateString(),
+            'photos' => [UploadedFile::fake()->createWithContent('room.png', $png)],
+        ])->assertSessionHas('success');
+
+        $this->actingAs($this->handyman->user)->post(route('handyman.offers.store', $request), [
+            'price' => '500',
+            'start_date' => now()->addDays(4)->toDateString(),
+            'end_date' => now()->addDays(4)->toDateString(),
+            'description' => 'Full repair with a photo of a similar finished job.',
+            'photos' => [UploadedFile::fake()->createWithContent('previous-job.png', $png)],
+        ])->assertSessionHas('success');
+
+        $requestPhoto = $request->photos()->firstOrFail();
+        $offerPhoto = $request->offers()->firstOrFail()->photos()->firstOrFail();
+        $outsider = HomeownerProfile::factory()->create();
+        $unmatched = HandymanProfile::factory()->create();
+
+        $this->actingAs($this->homeowner->user)->get(route('photos.offer', $offerPhoto))->assertOk();
+        $this->actingAs($this->handyman->user)->get(route('photos.request', $requestPhoto))->assertOk();
+        $this->actingAs($outsider->user)->get(route('photos.request', $requestPhoto))->assertForbidden();
+        $this->actingAs($outsider->user)->get(route('photos.offer', $offerPhoto))->assertForbidden();
+        $this->actingAs($unmatched->user)->get(route('photos.request', $requestPhoto))->assertForbidden();
+        auth()->logout();
+        $this->get(route('photos.request', $requestPhoto))->assertRedirect(route('login'));
+
+        $this->actingAs($this->homeowner->user)->delete(route('homeowner.requests.photos.destroy', [$request, $requestPhoto]))->assertSessionHas('success');
+        $this->assertModelMissing($requestPhoto);
+        Storage::disk('local')->assertMissing($requestPhoto->storage_path);
+    }
+
     private function openRequest(): ServiceRequest
     {
         return ServiceRequest::factory()->create([

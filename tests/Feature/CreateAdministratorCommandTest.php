@@ -18,7 +18,7 @@ class CreateAdministratorCommandTest extends TestCase
             ->expectsQuestion('Last name', 'Administrator')
             ->expectsQuestion('Username', 'platform-admin')
             ->expectsQuestion('Email', 'admin@example.test')
-            ->expectsQuestion('Password (minimum 12 characters)', 'Secure-admin-password-2026!')
+            ->expectsQuestion('Password (minimum 8 characters)', 'Secure-admin-password-2026!')
             ->expectsQuestion('Confirm password', 'Secure-admin-password-2026!')
             ->assertExitCode(0);
 

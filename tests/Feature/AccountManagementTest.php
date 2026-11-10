@@ -145,6 +145,43 @@ class AccountManagementTest extends TestCase
         $this->assertNull($member->fresh()->blocked_at);
     }
 
+    public function test_handyman_removing_a_skill_hides_its_requests(): void
+    {
+        [$kept, $removed] = Skill::factory()->count(2)->create();
+        $service = Service::factory()->create();
+        $service->skills()->attach($removed);
+        $request = ServiceRequest::factory()->create(['service_id' => $service->id, 'title' => 'Request needing the removed skill']);
+        $handyman = HandymanProfile::factory()->create();
+        $handyman->skills()->attach([$kept->id, $removed->id]);
+
+        $this->actingAs($handyman->user)->get(route('handyman.requests.index'))->assertSee('Request needing the removed skill');
+
+        $this->actingAs($handyman->user)->put(route('account.skills.update'), ['skill_ids' => [$kept->id]])->assertSessionHas('success');
+
+        $this->actingAs($handyman->user)->get(route('handyman.requests.index'))->assertDontSee('Request needing the removed skill');
+        $this->actingAs($handyman->user)->get(route('handyman.requests.show', $request))->assertForbidden();
+        $this->assertModelExists($removed);
+    }
+
+    public function test_administrator_searches_users_and_anonymizes_a_member(): void
+    {
+        $administrator = User::factory()->role(UserRole::Administrator)->create();
+        $member = User::factory()->create(['first_name' => 'Zakaria', 'last_name' => 'Searchable', 'phone_e164' => '+212600000099']);
+
+        $this->actingAs($administrator)->get(route('admin.users.index', ['q' => 'Searchable']))->assertOk()->assertSee('Zakaria Searchable');
+        $this->actingAs($administrator)->get(route('admin.users.index', ['q' => 'no-such-member']))->assertOk()->assertDontSee('Zakaria Searchable');
+
+        $this->actingAs($administrator)->post(route('admin.users.anonymize', $member), ['confirmation' => 'wrong'])->assertSessionHasErrors('confirmation');
+        $this->assertSame('active', $member->fresh()->status);
+
+        $this->actingAs($administrator)->post(route('admin.users.anonymize', $member), ['confirmation' => 'ANONYMIZE'])->assertSessionHas('success');
+        $anonymized = User::withTrashed()->findOrFail($member->id);
+        $this->assertSame('anonymized', $anonymized->status);
+        $this->assertNull($anonymized->phone_e164);
+        $this->assertNull($anonymized->email);
+        $this->actingAs($administrator)->get(route('admin.users.show', $member->id))->assertOk()->assertSee('Former member');
+    }
+
     public function test_administrator_accounts_cannot_be_blocked(): void
     {
         $administrator = User::factory()->role(UserRole::Administrator)->create();
