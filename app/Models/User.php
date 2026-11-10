@@ -53,4 +53,14 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->status === 'active' && $this->deleted_at === null;
     }
+
+    public function fullName(): string
+    {
+        return trim($this->first_name.' '.$this->last_name);
+    }
+
+    public function initials(): string
+    {
+        return mb_strtoupper(mb_substr($this->first_name, 0, 1).mb_substr($this->last_name, 0, 1));
+    }
 }

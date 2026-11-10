@@ -1,14 +1,33 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityEventController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\OfferController;
+use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\ServiceRequestController;
+use App\Http\Controllers\Admin\SkillController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\Handyman\DashboardController as HandymanDashboardController;
+use App\Http\Controllers\HandymanDirectoryController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Homeowner\DashboardController as HomeownerDashboardController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+Route::get('/', HomeController::class)->name('home');
+Route::get('/services', [CatalogController::class, 'index'])->name('services.index');
+Route::get('/services/{service}', [CatalogController::class, 'show'])->name('services.show');
+Route::get('/handymen', [HandymanDirectoryController::class, 'index'])->name('handymen.index');
+Route::get('/handymen/{handyman}', [HandymanDirectoryController::class, 'show'])->name('handymen.show');
+Route::view('/about', 'pages.about')->name('about');
+Route::view('/contact', 'pages.contact')->name('contact');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/register/{role}', [RegisteredUserController::class, 'create'])->whereIn('role', ['homeowner', 'handyman'])->name('register');
@@ -35,7 +54,18 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 });
 
 Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
-    Route::get('/homeowner/dashboard', [DashboardController::class, 'show'])->defaults('role', 'homeowner')->middleware('role:homeowner')->name('homeowner.dashboard');
-    Route::get('/handyman/dashboard', [DashboardController::class, 'show'])->defaults('role', 'handyman')->middleware('role:handyman')->name('handyman.dashboard');
-    Route::get('/admin/dashboard', [DashboardController::class, 'show'])->defaults('role', 'admin')->middleware('role:admin')->name('admin.dashboard');
+    Route::get('/homeowner/dashboard', HomeownerDashboardController::class)->middleware('role:homeowner')->name('homeowner.dashboard');
+    Route::get('/handyman/dashboard', HandymanDashboardController::class)->middleware('role:handyman')->name('handyman.dashboard');
+
+    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function (): void {
+        Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+        Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
+        Route::get('/skills', [SkillController::class, 'index'])->name('skills.index');
+        Route::get('/requests', [ServiceRequestController::class, 'index'])->name('requests.index');
+        Route::get('/offers', [OfferController::class, 'index'])->name('offers.index');
+        Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/activity', [ActivityEventController::class, 'index'])->name('activity.index');
+    });
 });

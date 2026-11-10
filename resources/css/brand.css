@@ -1,0 +1,268 @@
+/*
+ * BreIn brand tokens shared by the public site and the administration area.
+ * Bootstrap 5.3 reads these CSS variables, so the palette applies without recompiling Sass.
+ */
+:root {
+    --brein-primary: #0f7b6c;
+    --brein-primary-rgb: 15, 123, 108;
+    --brein-primary-dark: #0b5f54;
+    --brein-primary-soft: #e3f2ef;
+    --brein-accent: #f2a33a;
+    --brein-accent-rgb: 242, 163, 58;
+    --brein-accent-soft: #fdf1df;
+    --brein-navy: #12232e;
+    --brein-navy-rgb: 18, 35, 46;
+    --brein-ink: #1f2d38;
+    --brein-muted: #64727d;
+    --brein-surface: #f5f7fa;
+    --brein-line: #e3e8ee;
+    --brein-radius: 0.875rem;
+    --brein-shadow: 0 1px 2px rgba(18, 35, 46, 0.06), 0 8px 24px -12px rgba(18, 35, 46, 0.18);
+    --brein-shadow-lg: 0 24px 48px -24px rgba(18, 35, 46, 0.35);
+
+    --bs-primary: var(--brein-primary);
+    --bs-primary-rgb: var(--brein-primary-rgb);
+    --bs-primary-text-emphasis: var(--brein-primary-dark);
+    --bs-primary-bg-subtle: var(--brein-primary-soft);
+    --bs-primary-border-subtle: #b9ded6;
+    --bs-warning: var(--brein-accent);
+    --bs-warning-rgb: var(--brein-accent-rgb);
+    --bs-dark: var(--brein-navy);
+    --bs-dark-rgb: var(--brein-navy-rgb);
+    --bs-link-color: var(--brein-primary);
+    --bs-link-color-rgb: var(--brein-primary-rgb);
+    --bs-link-hover-color: var(--brein-primary-dark);
+    --bs-link-hover-color-rgb: 11, 95, 84;
+    --bs-body-color: var(--brein-ink);
+    --bs-body-color-rgb: 31, 45, 56;
+    --bs-secondary-color: var(--brein-muted);
+    --bs-heading-color: var(--brein-navy);
+    --bs-border-color: var(--brein-line);
+    --bs-border-radius: 0.625rem;
+    --bs-border-radius-lg: var(--brein-radius);
+    --bs-border-radius-xl: 1.25rem;
+    --bs-focus-ring-color: rgba(var(--brein-primary-rgb), 0.25);
+    --bs-font-sans-serif: 'Mulish', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --bs-body-font-family: var(--bs-font-sans-serif);
+    font-synthesis: none;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 800;
+    letter-spacing: -0.015em;
+}
+
+.btn {
+    --bs-btn-font-weight: 700;
+    --bs-btn-padding-x: 1.1rem;
+    --bs-btn-padding-y: 0.55rem;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--brein-primary);
+    --bs-btn-border-color: var(--brein-primary);
+    --bs-btn-hover-bg: var(--brein-primary-dark);
+    --bs-btn-hover-border-color: var(--brein-primary-dark);
+    --bs-btn-active-bg: var(--brein-primary-dark);
+    --bs-btn-active-border-color: var(--brein-primary-dark);
+    --bs-btn-disabled-bg: var(--brein-primary);
+    --bs-btn-disabled-border-color: var(--brein-primary);
+    --bs-btn-focus-shadow-rgb: var(--brein-primary-rgb);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--brein-primary);
+    --bs-btn-border-color: var(--brein-primary);
+    --bs-btn-hover-bg: var(--brein-primary);
+    --bs-btn-hover-border-color: var(--brein-primary);
+    --bs-btn-active-bg: var(--brein-primary-dark);
+    --bs-btn-active-border-color: var(--brein-primary-dark);
+    --bs-btn-focus-shadow-rgb: var(--brein-primary-rgb);
+}
+
+.btn-accent {
+    --bs-btn-color: var(--brein-navy);
+    --bs-btn-bg: var(--brein-accent);
+    --bs-btn-border-color: var(--brein-accent);
+    --bs-btn-hover-color: var(--brein-navy);
+    --bs-btn-hover-bg: #e8942a;
+    --bs-btn-hover-border-color: #e8942a;
+    --bs-btn-active-color: var(--brein-navy);
+    --bs-btn-active-bg: #d9881f;
+    --bs-btn-active-border-color: #d9881f;
+    --bs-btn-focus-shadow-rgb: var(--brein-accent-rgb);
+}
+
+.btn-soft-primary {
+    --bs-btn-color: var(--brein-primary-dark);
+    --bs-btn-bg: var(--brein-primary-soft);
+    --bs-btn-border-color: var(--brein-primary-soft);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--brein-primary);
+    --bs-btn-hover-border-color: var(--brein-primary);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--brein-primary-dark);
+    --bs-btn-active-border-color: var(--brein-primary-dark);
+    --bs-btn-focus-shadow-rgb: var(--brein-primary-rgb);
+}
+
+.text-bg-primary { background-color: var(--brein-primary) !important; }
+.bg-primary { background-color: var(--brein-primary) !important; }
+.text-accent { color: var(--brein-accent) !important; }
+.bg-accent-soft { background-color: var(--brein-accent-soft) !important; }
+.bg-primary-soft { background-color: var(--brein-primary-soft) !important; }
+.bg-surface { background-color: var(--brein-surface) !important; }
+.bg-navy { background-color: var(--brein-navy) !important; }
+
+.form-control, .form-select {
+    border-color: var(--brein-line);
+    padding: 0.6rem 0.85rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--brein-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--brein-primary-rgb), 0.15);
+}
+
+.form-label {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--brein-ink);
+}
+
+.badge {
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    padding: 0.4em 0.7em;
+    border-radius: 999px;
+}
+
+/* Avatars with initials replace profile photos when none is uploaded. */
+.avatar {
+    --avatar-size: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: calc(var(--avatar-size) * 0.38);
+    color: #fff;
+    background: linear-gradient(135deg, var(--brein-primary), var(--brein-primary-dark));
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    object-fit: cover;
+}
+
+.avatar-sm { --avatar-size: 2.1rem; }
+.avatar-lg { --avatar-size: 4rem; }
+.avatar-xl { --avatar-size: 6rem; }
+.avatar.tone-1 { background: linear-gradient(135deg, #0f7b6c, #1aa58f); }
+.avatar.tone-2 { background: linear-gradient(135deg, #2f5d8a, #4b86bf); }
+.avatar.tone-3 { background: linear-gradient(135deg, #b5651d, #f2a33a); }
+.avatar.tone-4 { background: linear-gradient(135deg, #6b3fa0, #9d6fd1); }
+.avatar.tone-5 { background: linear-gradient(135deg, #a53860, #d86b8f); }
+.avatar.tone-6 { background: linear-gradient(135deg, #12232e, #3a5468); }
+
+.rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    color: var(--brein-accent);
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.rating .bi-star { color: #d5dbe1; }
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--brein-primary-dark);
+    background: var(--brein-primary-soft);
+    white-space: nowrap;
+}
+
+.chip-muted {
+    color: var(--brein-muted);
+    background: var(--brein-surface);
+    border: 1px solid var(--brein-line);
+}
+
+.status-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.table > :not(caption) > * > * {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+}
+
+.table thead th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--brein-muted);
+    font-weight: 800;
+    border-bottom-width: 1px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--brein-muted);
+    border: 1px dashed var(--brein-line);
+    border-radius: var(--brein-radius);
+    background: #fff;
+}
+
+.empty-state .bi {
+    font-size: 2.25rem;
+    color: var(--brein-primary);
+    opacity: 0.6;
+}
+
+/* Compact event list used by dashboards and the activity monitor. */
+.activity-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.activity-timeline li {
+    position: relative;
+    padding: 0 0 1.25rem 1.75rem;
+}
+
+.activity-timeline li::before {
+    content: '';
+    position: absolute;
+    left: 0.45rem;
+    top: 0.35rem;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: var(--brein-primary);
+    box-shadow: 0 0 0 4px var(--brein-primary-soft);
+}
+
+.activity-timeline li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 1.2rem;
+    bottom: 0;
+    width: 2px;
+    background: var(--brein-line);
+}

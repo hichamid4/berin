@@ -1,0 +1,207 @@
+@import 'admin-lte/dist/css/adminlte.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+@import './brand.css';
+
+/* ---------------------------------------------------------------------------
+ * BreIn administration area: AdminLTE 4 shell with the shared brand tokens.
+ * ------------------------------------------------------------------------- */
+
+body {
+    background: var(--brein-surface);
+}
+
+.app-header {
+    border-bottom: 1px solid var(--brein-line);
+    box-shadow: none;
+}
+
+.app-header .nav-link {
+    font-weight: 600;
+    color: var(--brein-ink);
+}
+
+.app-sidebar.brein-sidebar {
+    --bs-body-bg: var(--brein-navy);
+    --bs-secondary-bg: var(--brein-navy);
+    --bs-tertiary-bg: #1a3140;
+    background: linear-gradient(180deg, #132a36 0%, var(--brein-navy) 100%) !important;
+    box-shadow: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.brein-sidebar .sidebar-brand {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brein-sidebar .brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.2rem;
+    text-decoration: none;
+    letter-spacing: -0.02em;
+}
+
+.brein-sidebar .brand-link .brand-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 0.65rem;
+    background: linear-gradient(135deg, var(--brein-primary), #1aa58f);
+    color: #fff;
+}
+
+.brein-sidebar .brand-link .brand-mark svg { width: 1.2rem; height: 1.2rem; }
+
+.brein-sidebar .brand-link em {
+    font-style: normal;
+    color: #5fd3bd;
+}
+
+.brein-sidebar .brand-text small {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.brein-sidebar .nav-header {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.42);
+    padding: 1.25rem 1rem 0.5rem;
+}
+
+.brein-sidebar .sidebar-menu > .nav-item > .nav-link {
+    color: rgba(255, 255, 255, 0.78);
+    font-weight: 600;
+    border-radius: 0.65rem;
+    margin: 0.15rem 0.6rem;
+}
+
+.brein-sidebar .sidebar-menu > .nav-item > .nav-link .nav-icon {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.brein-sidebar .sidebar-menu > .nav-item > .nav-link:hover,
+.brein-sidebar .sidebar-menu > .nav-item > .nav-link:focus {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.brein-sidebar .sidebar-menu > .nav-item > .nav-link.active {
+    background: var(--brein-primary);
+    color: #fff;
+    box-shadow: 0 8px 18px -10px rgba(var(--brein-primary-rgb), 0.9);
+}
+
+.brein-sidebar .sidebar-menu > .nav-item > .nav-link.active .nav-icon { color: #fff; }
+
+.brein-sidebar .sidebar-menu .nav-link .badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+}
+
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.75rem 0.85rem 0.25rem;
+    padding: 0.75rem;
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+
+.sidebar-user small { color: rgba(255, 255, 255, 0.55); font-weight: 600; }
+
+.app-content-header h1 {
+    font-size: 1.6rem;
+}
+
+.app-content-header .breadcrumb {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+
+.app-content-header .breadcrumb a {
+    text-decoration: none;
+}
+
+.card {
+    border: 1px solid var(--brein-line);
+    border-radius: var(--brein-radius);
+    box-shadow: var(--brein-shadow);
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--brein-line);
+    padding: 1rem 1.25rem;
+}
+
+.card-title {
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.small-box {
+    border-radius: var(--brein-radius);
+    box-shadow: var(--brein-shadow);
+    overflow: hidden;
+}
+
+.small-box > .inner {
+    padding: 1.25rem 1.25rem 1rem;
+}
+
+.small-box > .inner h3 {
+    font-weight: 800;
+    font-size: 2rem;
+}
+
+.small-box > .inner p {
+    font-weight: 700;
+    opacity: 0.9;
+}
+
+.small-box .small-box-icon {
+    opacity: 0.25;
+    right: 1rem;
+    top: 0.75rem;
+}
+
+.small-box .small-box-footer {
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.small-box.text-bg-primary { background: linear-gradient(135deg, var(--brein-primary), #1aa58f) !important; }
+.small-box.text-bg-info { background: linear-gradient(135deg, #2f5d8a, #4b86bf) !important; }
+.small-box.text-bg-warning { background: linear-gradient(135deg, #e0912b, var(--brein-accent)) !important; color: var(--brein-navy) !important; }
+.small-box.text-bg-success { background: linear-gradient(135deg, #2f7d45, #4caf6a) !important; }
+.small-box.text-bg-danger { background: linear-gradient(135deg, #a53860, #d86b8f) !important; }
+.small-box.text-bg-dark { background: linear-gradient(135deg, #12232e, #3a5468) !important; }
+
+.progress-thin {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--brein-surface);
+}
+
+.app-footer {
+    border-top: 1px solid var(--brein-line);
+    font-size: 0.85rem;
+    color: var(--brein-muted);
+}
+
+.table-card .table { margin-bottom: 0; }
+.table-card .table > :not(caption) > tr > th:first-child,
+.table-card .table > :not(caption) > tr > td:first-child { padding-left: 1.25rem; }
