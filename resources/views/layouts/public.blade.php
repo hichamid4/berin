@@ -71,11 +71,6 @@
             <div class="col-lg-4">
                 <a class="brand mb-3" href="{{ route('home') }}"><x-brand-mark /><span>Bre<em>In</em></span></a>
                 <p class="mb-3">The Moroccan marketplace that connects homeowners with trusted, skill-matched handymen. Describe the work, compare offers and book with confidence.</p>
-                <div class="social-links d-flex gap-2">
-                    <a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
-                    <a href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
-                    <a href="#" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
-                </div>
             </div>
             <div class="col-6 col-lg-2">
                 <h6>Marketplace</h6>
