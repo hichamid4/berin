@@ -57,8 +57,19 @@
                     <div class="card-body p-4">
                         <h2 class="h5">Need this done at home?</h2>
                         <p class="text-secondary small">Create a request with your description, city and preferred date. Qualified handymen will send you offers in MAD.</p>
+                        @if ($offerPrices?->total)
+                            <div class="bg-white rounded-3 p-3 mb-3 small">
+                                <div class="text-secondary fw-bold text-uppercase mb-1" style="letter-spacing:.06em;font-size:.7rem">Offers received on BreIn</div>
+                                <div class="price-tag">{{ number_format((float) $offerPrices->minimum, 0, ',', ' ') }} – {{ number_format((float) $offerPrices->maximum, 0, ',', ' ') }}<small>MAD</small></div>
+                                <div class="text-secondary">Average {{ number_format((float) $offerPrices->average, 0, ',', ' ') }} MAD across {{ $offerPrices->total }} {{ Str::plural('offer', $offerPrices->total) }}</div>
+                            </div>
+                        @endif
                         @auth
-                            <a class="btn btn-primary w-100" href="{{ route(auth()->user()->dashboardRouteName()) }}">Go to my dashboard</a>
+                            @if (auth()->user()->isHomeowner())
+                                <a class="btn btn-primary w-100" href="{{ route('homeowner.requests.create', ['service' => $service->id]) }}"><i class="bi bi-plus-circle me-1"></i>Request this service</a>
+                            @else
+                                <a class="btn btn-primary w-100" href="{{ route(auth()->user()->dashboardRouteName()) }}">Go to my dashboard</a>
+                            @endif
                         @else
                             <a class="btn btn-primary w-100 mb-2" href="{{ route('register', 'homeowner') }}">Create a homeowner account</a>
                             <a class="btn btn-outline-primary w-100" href="{{ route('login') }}">I already have an account</a>

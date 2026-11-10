@@ -5,16 +5,8 @@
 @section('subtitle', ($profile->city ? $profile->city.' · ' : '').$profile->skills->count().' declared '.Str::plural('skill', $profile->skills->count()))
 
 @section('hero_actions')
-    <a class="btn btn-outline-light" href="{{ route('handymen.show', $profile) }}"><i class="bi bi-person-badge me-1"></i>View my public profile</a>
-@endsection
-
-@section('sidebar')
-    <a class="nav-link active" href="#overview"><i class="bi bi-speedometer2"></i>Overview</a>
-    <a class="nav-link" href="#matching"><i class="bi bi-bullseye"></i>Matching requests <span class="badge text-bg-primary">{{ $stats['matching'] }}</span></a>
-    <a class="nav-link" href="#jobs"><i class="bi bi-hammer"></i>Active jobs @if ($stats['booked'])<span class="badge text-bg-warning">{{ $stats['booked'] }}</span>@endif</a>
-    <a class="nav-link" href="#offers"><i class="bi bi-cash-stack"></i>My offers <span class="badge text-bg-light border">{{ $offers->count() }}</span></a>
-    <a class="nav-link" href="#reviews"><i class="bi bi-star"></i>Reviews <span class="badge text-bg-light border">{{ $stats['reviews'] }}</span></a>
-    <a class="nav-link" href="#skills"><i class="bi bi-tools"></i>My skills</a>
+    <a class="btn btn-accent" href="{{ route('handyman.requests.index') }}"><i class="bi bi-bullseye me-1"></i>Browse matching requests</a>
+    <a class="btn btn-outline-light" href="{{ route('handymen.show', $profile) }}"><i class="bi bi-person-badge me-1"></i>Public profile</a>
 @endsection
 
 @section('dashboard')
@@ -45,7 +37,7 @@
         @else
             <div class="row g-3">
                 @foreach ($matchingRequests as $request)
-                    <div class="col-md-6"><x-request-card :request="$request" :show-status="false" /></div>
+                    <div class="col-md-6"><x-request-card :request="$request" :show-status="false" :url="route('handyman.requests.show', $request)" /></div>
                 @endforeach
             </div>
         @endif
@@ -61,10 +53,14 @@
                     <div class="list-row align-items-center">
                         <span class="icon-tile icon-tone-{{ ($loop->index % 8) + 1 }} d-grid rounded-3 flex-shrink-0" style="width:2.75rem;height:2.75rem;place-items:center"><i class="bi {{ $offer->request->service->category->icon() }}"></i></span>
                         <div class="flex-grow-1 min-w-0">
-                            <strong class="d-block text-truncate">{{ $offer->request->title }}</strong>
+                            <a class="fw-bold d-block text-truncate text-decoration-none" href="{{ route('handyman.requests.show', $offer->request_id) }}">{{ $offer->request->title }}</a>
                             <small class="text-secondary"><i class="bi bi-geo-alt me-1"></i>{{ $offer->request->service_city }} · {{ $offer->start_date->translatedFormat('j M') }} – {{ $offer->end_date->translatedFormat('j M Y') }}</small>
                         </div>
-                        <div class="text-end"><div class="price-tag">{{ number_format((float) $offer->price, 0, ',', ' ') }}<small>MAD</small></div><x-status-badge :status="$offer->request->status" /></div>
+                        <div class="text-end"><div class="price-tag">{{ number_format((float) $offer->price, 0, ',', ' ') }}<small>MAD</small></div><x-status-badge :status="$offer->request->status" />
+                            @if ($offer->request->status === \App\RequestStatus::Booked)
+                                <form method="post" action="{{ route('handyman.offers.complete', $offer) }}" class="mt-2" data-confirm="Mark this job as completed? The homeowner will be asked to confirm." data-confirm-button="Mark as completed" data-confirm-variant="success">@csrf<button class="btn btn-sm btn-success" type="submit"><i class="bi bi-check2-circle me-1"></i>Mark done</button></form>
+                            @endif
+                        </div>
                     </div>
                 @endforeach
             @endif
@@ -83,7 +79,7 @@
                         <tbody>
                             @foreach ($offers as $offer)
                                 <tr>
-                                    <td class="min-w-0"><strong class="d-block text-truncate" style="max-width:16rem">{{ $offer->request->title }}</strong><small class="text-secondary">{{ $offer->request->service_city }} · sent {{ $offer->created_at->diffForHumans() }}</small></td>
+                                    <td class="min-w-0"><a class="fw-bold d-block text-truncate text-decoration-none" style="max-width:16rem" href="{{ route('handyman.requests.show', $offer->request_id) }}">{{ $offer->request->title }}</a><small class="text-secondary">{{ $offer->request->service_city }} · sent {{ $offer->created_at->diffForHumans() }}</small></td>
                                     <td class="small fw-bold">{{ $offer->request->service->name }}</td>
                                     <td class="text-nowrap fw-bold">{{ $offer->formattedPrice() }}</td>
                                     <td class="text-nowrap small">{{ $offer->start_date->translatedFormat('j M') }} – {{ $offer->end_date->translatedFormat('j M Y') }}</td>
@@ -130,7 +126,8 @@
                             <span class="chip" title="{{ $skill->description }}"><i class="bi bi-patch-check-fill"></i>{{ $skill->name }}</span>
                         @endforeach
                     </div>
-                    <p class="small text-secondary mt-3 mb-0">Skills determine which requests you can see and offer on. Skill management will be available in your account settings.</p>
+                    <p class="small text-secondary mt-3 mb-2">Skills determine which requests you can see and offer on.</p>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ route('account.edit') }}#skills"><i class="bi bi-pencil me-1"></i>Edit my skills</a>
                 </div>
             </div>
         </div>

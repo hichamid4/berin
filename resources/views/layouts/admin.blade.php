@@ -27,6 +27,7 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow">
                         <li><span class="dropdown-item-text small text-secondary">Signed in as administrator</span></li>
+                        <li><a class="dropdown-item" href="{{ route('account.edit') }}"><i class="bi bi-person-gear me-2"></i>My account</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><form method="post" action="{{ route('logout') }}">@csrf<button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button></form></li>
                     </ul>
@@ -65,6 +66,8 @@
                     <li class="nav-item"><a href="{{ route('admin.requests.index') }}" class="nav-link {{ request()->routeIs('admin.requests.*') ? 'active' : '' }}"><i class="nav-icon bi bi-clipboard-check"></i><p>Requests</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.offers.index') }}" class="nav-link {{ request()->routeIs('admin.offers.*') ? 'active' : '' }}"><i class="nav-icon bi bi-cash-stack"></i><p>Offers</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.reviews.index') }}" class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}"><i class="nav-icon bi bi-star"></i><p>Reviews</p></a></li>
+                    <li class="nav-header">Account</li>
+                    <li class="nav-item"><a href="{{ route('account.edit') }}" class="nav-link {{ request()->routeIs('account.*') ? 'active' : '' }}"><i class="nav-icon bi bi-person-gear"></i><p>My account</p></a></li>
                 </ul>
             </nav>
         </div>

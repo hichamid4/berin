@@ -5,15 +5,7 @@
 @section('subtitle', ($profile->city ? $profile->city.' · ' : '').$stats['total'].' '.Str::plural('request', $stats['total']).' so far')
 
 @section('hero_actions')
-    <a class="btn btn-accent" href="{{ route('services.index') }}"><i class="bi bi-plus-circle me-1"></i>Post a new request</a>
-@endsection
-
-@section('sidebar')
-    <a class="nav-link active" href="#overview"><i class="bi bi-speedometer2"></i>Overview</a>
-    <a class="nav-link" href="#requests"><i class="bi bi-clipboard-check"></i>My requests <span class="badge text-bg-primary">{{ $stats['total'] }}</span></a>
-    <a class="nav-link" href="#offers"><i class="bi bi-inbox"></i>Offers received @if ($pendingOffers->isNotEmpty())<span class="badge text-bg-warning">{{ $pendingOffers->count() }}</span>@endif</a>
-    <a class="nav-link" href="#favorites"><i class="bi bi-heart"></i>Favorite handymen <span class="badge text-bg-light border">{{ $stats['favorites'] }}</span></a>
-    <a class="nav-link" href="{{ route('handymen.index') }}"><i class="bi bi-search"></i>Find a handyman</a>
+    <a class="btn btn-accent" href="{{ route('homeowner.requests.create') }}"><i class="bi bi-plus-circle me-1"></i>Post a new request</a>
 @endsection
 
 @section('dashboard')
@@ -41,7 +33,7 @@
                 <span class="small text-secondary">{{ $stats['offers'] }} {{ Str::plural('offer', $stats['offers']) }} received in total</span>
             </div>
             @if ($requests->isEmpty())
-                <x-empty-state icon="bi-clipboard-plus" title="You have not posted a request yet" text="Choose a service from the catalog to describe the work you need." />
+                <x-empty-state icon="bi-clipboard-plus" title="You have not posted a request yet" text="Describe the work you need and receive offers from qualified handymen."><a class="btn btn-primary mt-3" href="{{ route('homeowner.requests.create') }}">Post a request</a></x-empty-state>
             @else
                 <div class="table-responsive">
                     <table class="table align-middle">
@@ -49,7 +41,7 @@
                         <tbody>
                             @foreach ($requests as $request)
                                 <tr>
-                                    <td class="min-w-0"><strong class="d-block text-truncate" style="max-width:18rem">{{ $request->title }}</strong><small class="text-secondary"><i class="bi bi-geo-alt me-1"></i>{{ $request->service_city }}</small></td>
+                                    <td class="min-w-0"><a class="fw-bold d-block text-truncate text-decoration-none" style="max-width:18rem" href="{{ route('homeowner.requests.show', $request) }}">{{ $request->title }}</a><small class="text-secondary"><i class="bi bi-geo-alt me-1"></i>{{ $request->service_city }}</small></td>
                                     <td><span class="small fw-bold"><i class="bi {{ $request->service->category->icon() }} text-primary me-1"></i>{{ $request->service->name }}</span></td>
                                     <td class="text-nowrap small">{{ $request->desired_start_date->translatedFormat('j M Y') }}</td>
                                     <td><span class="fw-bold">{{ $request->offers_count }}</span>@if ($request->pending_offers_count) <small class="text-warning-emphasis">({{ $request->pending_offers_count }} new)</small>@endif</td>
@@ -86,7 +78,7 @@
                                         <a class="fw-bold text-decoration-none" href="{{ route('handymen.show', $offer->handyman) }}">{{ $offer->handyman->user->fullName() }}</a>
                                         <span class="price-tag">{{ number_format((float) $offer->price, 0, ',', ' ') }}<small>MAD</small></span>
                                     </div>
-                                    <div class="small text-secondary text-truncate">for “{{ $offer->request->title }}”</div>
+                                    <a class="small text-secondary text-truncate d-block" href="{{ route('homeowner.requests.show', $offer->request_id) }}#offers">for “{{ $offer->request->title }}” — review and decide</a>
                                     <p class="small mb-1 mt-1">{{ Str::limit($offer->description, 140) }}</p>
                                     <small class="text-secondary"><i class="bi bi-calendar-range me-1"></i>{{ $offer->start_date->translatedFormat('j M') }} – {{ $offer->end_date->translatedFormat('j M Y') }} · sent {{ $offer->created_at->diffForHumans() }}</small>
                                 </div>
@@ -110,7 +102,8 @@
                                     <a class="fw-bold text-decoration-none d-block text-truncate" href="{{ route('handymen.show', $handyman) }}">{{ $handyman->user->fullName() }}</a>
                                     <small class="text-secondary">{{ $handyman->skills->pluck('name')->take(2)->join(', ') }} · {{ $handyman->city }}</small>
                                 </div>
-                                <x-rating :value="$handyman->reviews_avg_rating" :count="$handyman->reviews_count" />
+                                <div class="text-end"><x-rating :value="$handyman->reviews_avg_rating" :count="$handyman->reviews_count" />
+                                    <form method="post" action="{{ route('homeowner.favorites.destroy', $handyman) }}" class="mt-1">@csrf @method('DELETE')<button class="btn btn-link btn-sm text-danger p-0" type="submit"><i class="bi bi-heartbreak me-1"></i>Remove</button></form></div>
                             </div>
                         @endforeach
                     @endif

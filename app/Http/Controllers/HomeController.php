@@ -25,6 +25,7 @@ class HomeController extends Controller
 
         $popularServices = Service::query()
             ->active()
+            ->whereHas('category', fn (Builder $query) => $query->where('is_active', true))
             ->with(['category', 'skills'])
             ->withCount('requests')
             ->orderByDesc('requests_count')

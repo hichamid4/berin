@@ -28,10 +28,10 @@
 </form>
 
 <div class="card table-card">
-    <div class="card-header d-flex justify-content-between align-items-center"><h3 class="card-title mb-0">{{ $users->total() }} {{ Str::plural('user', $users->total()) }}</h3><span class="small text-secondary">Block/unblock actions arrive with the user management module</span></div>
+    <div class="card-header d-flex justify-content-between align-items-center"><h3 class="card-title mb-0">{{ $users->total() }} {{ Str::plural('user', $users->total()) }}</h3></div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
-            <thead><tr><th>User</th><th>Role</th><th>City</th><th>Email</th><th>Verified</th><th>Joined</th><th>Status</th></tr></thead>
+            <thead><tr><th>User</th><th>Role</th><th>City</th><th>Email</th><th>Verified</th><th>Joined</th><th>Status</th><th></th></tr></thead>
             <tbody>
                 @forelse ($users as $member)
                     <tr>
@@ -41,10 +41,10 @@
                         <td class="small">{{ $member->email ?? '—' }}</td>
                         <td>@if ($member->email_verified_at)<i class="bi bi-patch-check-fill text-success"></i>@else<i class="bi bi-dash-circle text-secondary"></i>@endif</td>
                         <td class="small text-nowrap">{{ $member->created_at->translatedFormat('j M Y') }}</td>
-                        <td><span class="badge {{ match($member->status) { 'active' => 'text-bg-success', 'blocked' => 'text-bg-danger', default => 'text-bg-secondary' } }}">{{ ucfirst($member->status) }}</span></td>
+                        <td><span class="badge {{ match($member->status) { 'active' => 'text-bg-success', 'blocked' => 'text-bg-danger', default => 'text-bg-secondary' } }}">{{ ucfirst($member->status) }}</span></td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ route('admin.users.show', $member->id) }}">Manage</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="text-center text-secondary py-4">No user matches these filters.</td></tr>
+                    <tr><td colspan="8" class="text-center text-secondary py-4">No user matches these filters.</td></tr>
                 @endforelse
             </tbody>
         </table>

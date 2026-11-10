@@ -28,6 +28,9 @@
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     @auth
                         @if (auth()->user()->hasVerifiedEmail())
+                            @if (auth()->user()->isHomeowner())
+                                <a class="btn btn-primary" href="{{ route('homeowner.requests.create') }}"><i class="bi bi-plus-circle me-1"></i>Post a request</a>
+                            @endif
                             <a class="btn btn-soft-primary d-inline-flex align-items-center gap-2" href="{{ route(auth()->user()->dashboardRouteName()) }}">
                                 <x-avatar :user="auth()->user()" size="avatar-sm" />
                                 <span>My dashboard</span>

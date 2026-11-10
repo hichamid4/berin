@@ -10,3 +10,15 @@
         } }}</span>
     </div>
 @endif
+@if (session('success'))
+    <div {{ $attributes->merge(['class' => 'alert alert-success d-flex align-items-start gap-2']) }} role="status">
+        <i class="bi bi-check-circle-fill mt-1"></i>
+        <span>{{ session('success') }}</span>
+    </div>
+@endif
+@if (session('error'))
+    <div {{ $attributes->merge(['class' => 'alert alert-danger d-flex align-items-start gap-2']) }} role="alert">
+        <i class="bi bi-exclamation-octagon-fill mt-1"></i>
+        <span>{{ session('error') }}</span>
+    </div>
+@endif

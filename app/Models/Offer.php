@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['request_id', 'handyman_id', 'price', 'currency', 'start_date', 'end_date', 'description', 'status', 'accepted_at'])]
@@ -15,6 +16,8 @@ class Offer extends Model
 {
     /** @use HasFactory<OfferFactory> */
     use HasFactory;
+
+    public const MAX_PHOTOS = 5;
 
     /**
      * @return array<string, string>
@@ -43,6 +46,16 @@ class Offer extends Model
     public function review(): HasOne
     {
         return $this->hasOne(Review::class, 'offer_id');
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(OfferPhoto::class)->orderBy('sort_order');
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === OfferStatus::Pending;
     }
 
     public function formattedPrice(): string

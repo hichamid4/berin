@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\OfferStatus;
 use App\RequestStatus;
 use Database\Factories\ServiceRequestFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -17,6 +18,8 @@ class ServiceRequest extends Model
 {
     /** @use HasFactory<ServiceRequestFactory> */
     use HasFactory;
+
+    public const MAX_PHOTOS = 5;
 
     /**
      * @return array<string, string>
@@ -47,9 +50,45 @@ class ServiceRequest extends Model
         return $this->hasMany(Offer::class, 'request_id');
     }
 
+    public function photos(): HasMany
+    {
+        return $this->hasMany(RequestPhoto::class, 'request_id')->orderBy('sort_order');
+    }
+
     public function acceptedOffer(): BelongsTo
     {
         return $this->belongsTo(Offer::class, 'accepted_offer_id');
+    }
+
+    public function isOwnedBy(User $user): bool
+    {
+        return $this->homeowner_id === $user->id;
+    }
+
+    public function isOpen(): bool
+    {
+        return $this->status === RequestStatus::Open;
+    }
+
+    /**
+     * Whether the handyman holds at least one skill required by this request's service.
+     */
+    public function matchesHandyman(HandymanProfile $handyman): bool
+    {
+        return $this->service->skills()
+            ->whereIn('skills.id', $handyman->skills()->select('skills.id'))
+            ->exists();
+    }
+
+    /**
+     * Whether the handyman currently has a pending or accepted offer on this request.
+     */
+    public function hasActiveOfferFrom(HandymanProfile $handyman): bool
+    {
+        return $this->offers()
+            ->where('handyman_id', $handyman->user_id)
+            ->whereIn('status', [OfferStatus::Pending, OfferStatus::Accepted])
+            ->exists();
     }
 
     #[Scope]

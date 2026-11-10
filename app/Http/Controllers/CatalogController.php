@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\HandymanProfile;
+use App\Models\Offer;
 use App\Models\Service;
+use App\OfferStatus;
 use App\RequestStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,6 +27,7 @@ class CatalogController extends Controller
 
         $services = Service::query()
             ->active()
+            ->whereHas('category', fn (Builder $query) => $query->where('is_active', true))
             ->with(['category', 'skills'])
             ->withCount('requests')
             ->when($selectedCategory, fn (Builder $query) => $query->where('category_id', $selectedCategory))
@@ -40,9 +43,8 @@ class CatalogController extends Controller
 
     public function show(Service $service): View
     {
-        abort_unless($service->is_active, 404);
-
         $service->load(['category', 'skills']);
+        abort_unless($service->is_active && $service->category->is_active, 404);
 
         $handymen = HandymanProfile::query()
             ->whereHas('user', fn (Builder $query) => $query->where('status', 'active'))
@@ -63,9 +65,15 @@ class CatalogController extends Controller
             ->limit(3)
             ->get();
 
+        $offerPrices = Offer::query()
+            ->whereIn('status', [OfferStatus::Pending, OfferStatus::Accepted])
+            ->whereHas('request', fn (Builder $query) => $query->where('service_id', $service->id))
+            ->selectRaw('min(price) as minimum, max(price) as maximum, avg(price) as average, count(*) as total')
+            ->first();
+
         $openRequestCount = $service->requests()->where('status', RequestStatus::Open)->count();
         $completedRequestCount = $service->requests()->where('status', RequestStatus::Completed)->count();
 
-        return view('catalog.show', compact('service', 'handymen', 'relatedServices', 'openRequestCount', 'completedRequestCount'));
+        return view('catalog.show', compact('service', 'handymen', 'relatedServices', 'openRequestCount', 'completedRequestCount', 'offerPrices'));
     }
 }

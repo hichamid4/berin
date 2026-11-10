@@ -2,7 +2,7 @@
 <article {{ $attributes->merge(['class' => 'card card-hover handyman-card h-100']) }}>
     <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center gap-3 mb-3">
-            <x-avatar :user="$handyman->user" size="avatar-lg" />
+            <x-avatar :user="$handyman->user" size="avatar-lg" :photo-url="$handyman->photo_path ? route('handymen.photo', $handyman) : null" />
             <div class="min-w-0">
                 <h3 class="h5 mb-0 stretched-title text-truncate"><a href="{{ route('handymen.show', $handyman) }}" class="stretched-link">{{ $handyman->user->fullName() }}</a></h3>
                 <div class="card-meta mt-1">

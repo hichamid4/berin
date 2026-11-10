@@ -7,7 +7,7 @@
     <div class="container">
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li><li class="breadcrumb-item"><a href="{{ route('handymen.index') }}">Handymen</a></li><li class="breadcrumb-item active" aria-current="page">{{ $handyman->user->fullName() }}</li></ol></nav>
         <div class="d-flex flex-wrap align-items-center gap-4">
-            <x-avatar :user="$handyman->user" size="avatar-xl" class="border border-3 border-white shadow" />
+            <x-avatar :user="$handyman->user" size="avatar-xl" class="border border-3 border-white shadow" :photo-url="$handyman->photo_path ? route('handymen.photo', $handyman) : null" />
             <div>
                 <h1>{{ $handyman->user->fullName() }}</h1>
                 <p class="mb-2"><i class="bi bi-geo-alt-fill me-1"></i>{{ $handyman->city ?? 'Morocco' }} · Member since {{ $handyman->user->created_at->translatedFormat('F Y') }}</p>
@@ -113,7 +113,15 @@
                     <div class="card-body p-4">
                         <h2 class="h5">Work with {{ $handyman->user->first_name }}</h2>
                         <p class="small text-secondary mb-3">Post a request for one of the services above. If {{ $handyman->user->first_name }} sends an offer and you accept it, you can contact them directly on WhatsApp.</p>
-                        <a class="btn btn-primary w-100" href="{{ auth()->check() ? route(auth()->user()->dashboardRouteName()) : route('register', 'homeowner') }}">Post a request</a>
+                        @if (auth()->user()?->isHomeowner())
+                            <a class="btn btn-primary w-100 mb-2" href="{{ route('homeowner.requests.create') }}"><i class="bi bi-plus-circle me-1"></i>Post a request</a>
+                            <form method="post" action="{{ $isFavorite ? route('homeowner.favorites.destroy', $handyman) : route('homeowner.favorites.store', $handyman) }}">
+                                @csrf @if ($isFavorite) @method('DELETE') @endif
+                                <button class="btn {{ $isFavorite ? 'btn-outline-danger' : 'btn-outline-primary' }} w-100" type="submit"><i class="bi {{ $isFavorite ? 'bi-heartbreak' : 'bi-heart' }} me-1"></i>{{ $isFavorite ? 'Remove from favorites' : 'Add to favorites' }}</button>
+                            </form>
+                        @elseif (auth()->guest())
+                            <a class="btn btn-primary w-100" href="{{ route('register', 'homeowner') }}">Create a homeowner account</a>
+                        @endif
                     </div>
                 </div>
             </aside>

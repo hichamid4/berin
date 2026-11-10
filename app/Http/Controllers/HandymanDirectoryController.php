@@ -9,6 +9,7 @@ use App\RequestStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class HandymanDirectoryController extends Controller
 {
@@ -60,6 +61,9 @@ class HandymanDirectoryController extends Controller
 
         $services = $handyman->skills->flatMap->services->unique('id')->sortBy('name')->values();
 
-        return view('handymen.show', compact('handyman', 'reviews', 'ratingBreakdown', 'services'));
+        $isFavorite = (bool) request()->user()?->isHomeowner()
+            && DB::table('handyman_favorites')->where('homeowner_id', request()->user()->id)->where('handyman_id', $handyman->user_id)->exists();
+
+        return view('handymen.show', compact('handyman', 'reviews', 'ratingBreakdown', 'services', 'isFavorite'));
     }
 }
