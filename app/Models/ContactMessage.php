@@ -52,11 +52,13 @@ class ContactMessage extends Model
      */
     public function scopeMatching(Builder $query, string $search): void
     {
+        $pattern = '%'.addcslashes($search, '\\%_').'%';
+
         $query->where(fn (Builder $inner) => $inner
-            ->where('name', 'like', "%{$search}%")
-            ->orWhere('email', 'like', "%{$search}%")
-            ->orWhere('subject', 'like', "%{$search}%")
-            ->orWhere('message', 'like', "%{$search}%"));
+            ->where('name', 'like', $pattern)
+            ->orWhere('email', 'like', $pattern)
+            ->orWhere('subject', 'like', $pattern)
+            ->orWhere('message', 'like', $pattern));
     }
 
     public function isDuplicateOfRecentSubmission(): bool

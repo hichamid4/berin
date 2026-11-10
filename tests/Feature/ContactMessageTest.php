@@ -162,6 +162,61 @@ class ContactMessageTest extends TestCase
         $this->assertDatabaseCount('contact_messages', 4);
     }
 
+    public function test_rejected_submissions_do_not_use_up_the_message_quota(): void
+    {
+        foreach (range(1, 4) as $attempt) {
+            $this->from(route('contact'))->post(route('contact.store'), $this->validMessage(['email' => "typo-{$attempt}"]))
+                ->assertSessionHasErrors(['email' => 'Please enter a valid email address, for example name@example.com.']);
+        }
+
+        $this->from(route('contact'))->post(route('contact.store'), $this->validMessage())
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('contact_message_sent', true);
+
+        $this->assertDatabaseCount('contact_messages', 1);
+    }
+
+    public function test_the_daily_quota_applies_after_the_minute_quota_resets(): void
+    {
+        foreach (range(1, 10) as $attempt) {
+            $this->post(route('contact.store'), $this->validMessage(['subject' => "Daily question {$attempt}"]))->assertSessionHasNoErrors();
+            if ($attempt % 3 === 0) {
+                $this->travel(61)->seconds();
+            }
+        }
+
+        $this->travel(61)->seconds();
+        $this->post(route('contact.store'), $this->validMessage(['subject' => 'Daily question 11']))
+            ->assertRedirect(route('contact'))
+            ->assertSessionHasErrors(['message' => 'You have sent several messages today. Please wait a little before sending another one.']);
+
+        $this->assertDatabaseCount('contact_messages', 10);
+    }
+
+    public function test_a_flood_of_requests_is_stopped_before_validation_even_without_a_referrer(): void
+    {
+        foreach (range(1, 10) as $attempt) {
+            $this->post(route('contact.store'), [])->assertSessionHasErrors('name');
+        }
+
+        $this->post(route('contact.store'), $this->validMessage())
+            ->assertRedirect(route('contact'))
+            ->assertSessionHasErrors(['message' => 'Too many attempts from your connection. Please wait a minute before trying again.']);
+
+        $this->assertDatabaseCount('contact_messages', 0);
+    }
+
+    public function test_search_treats_percent_and_underscore_literally(): void
+    {
+        $administrator = User::factory()->role(UserRole::Administrator)->create();
+        ContactMessage::factory()->create(['subject' => 'Discount of 50% on plumbing?']);
+        ContactMessage::factory()->create(['subject' => 'Painting quote 500 MAD']);
+
+        $this->actingAs($administrator)->get(route('admin.contact-messages.index', ['q' => '50%']))
+            ->assertSee('Discount of 50% on plumbing?')
+            ->assertDontSee('Painting quote 500 MAD');
+    }
+
     public function test_guests_homeowners_and_handymen_cannot_reach_contact_messages(): void
     {
         $message = ContactMessage::factory()->create();

@@ -61,7 +61,9 @@ Passwords must be at least 8 characters. Homeowners and handymen must give a pho
 
 ## Contact Us messages
 
-The public `/contact` form stores messages in the `contact_messages` table; nothing is emailed. Administrators handle them under **Admin → Contact messages** (`/admin/contact-messages`). From there they can search, filter by status, open a message, mark it new, read or resolved, and reply from their own email app. Submissions are limited to 3 per minute and 10 per day per IP address. A hidden honeypot field and a 10-minute duplicate check stop spam and double submissions. Messages are never deleted automatically; the retention period is still an open decision (see Section 11.6 of the functional specification).
+The public `/contact` form stores messages in the `contact_messages` table; nothing is emailed. Administrators handle them under **Admin → Contact messages** (`/admin/contact-messages`). From there they can search, filter by status, open a message, mark it new, read or resolved, and reply from their own email app. Accepted submissions are limited to 3 per minute and 10 per day per IP address; failed validation attempts don't count, and a separate 10-requests-per-minute throttle stops floods. A hidden honeypot field and a 10-minute duplicate check stop spam and double submissions. Messages are never deleted automatically; the retention period is still an open decision (see Section 11.6 of the functional specification).
+
+**Placeholder:** the email shown on the Contact page (`contact@brein.example`) is not a real mailbox. Replace it in `resources/views/pages/contact.blade.php` when the real support address is known.
 
 ## Checks
 

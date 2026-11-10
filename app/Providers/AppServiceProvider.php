@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\ContactMessageStatus;
 use App\Http\Requests\StoreContactMessageRequest;
 use App\Models\ContactMessage;
-use Closure;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -49,22 +48,18 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Contact Us accepts a few messages per visitor per minute and per day. A throttled visitor
-     * is sent back to the form with their text kept and an explanation instead of a bare 429 page.
+     * Flood guard for the Contact Us endpoint: caps every POST, valid or not. The stricter quota on
+     * accepted messages is applied by ContactMessageController after validation, so a visitor who
+     * corrects a few typos is never told they have already sent messages.
      */
     private function limitContactMessages(): void
     {
-        RateLimiter::for('contact', function (Request $request): array {
-            $tooMany = fn (string $period): Closure => fn (Request $request, array $headers) => back()
+        RateLimiter::for('contact', fn (Request $request): Limit => Limit::perMinute(10)
+            ->by('contact-requests|'.$request->ip())
+            ->response(fn (Request $request, array $headers) => to_route('contact')
                 ->withInput($request->except(StoreContactMessageRequest::HONEYPOT_FIELD))
-                ->withErrors(['message' => "You have sent several messages {$period}. Please wait a little before sending another one."])
-                ->withHeaders($headers);
-
-            return [
-                Limit::perMinute(3)->by('contact-minute|'.$request->ip())->response($tooMany('in the last minute')),
-                Limit::perDay(10)->by('contact-day|'.$request->ip())->response($tooMany('today')),
-            ];
-        });
+                ->withErrors(['message' => 'Too many attempts from your connection. Please wait a minute before trying again.'])
+                ->withHeaders($headers)));
     }
 
     /**

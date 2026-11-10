@@ -22,6 +22,7 @@
                         <span class="icon-tile icon-tone-1 d-grid rounded-3 flex-shrink-0" style="width:3rem;height:3rem;place-items:center;font-size:1.3rem"><i class="bi bi-geo-alt"></i></span>
                         <div><h2 class="h6 mb-1">Office</h2><p class="small text-secondary mb-0">Casablanca, Morocco</p></div>
                     </div></div>
+                    {{-- PLACEHOLDER: contact@brein.example is not a real mailbox. Replace it once the owner provides the real support address (see FUNCTIONAL_SPECIFICATION.md §11.6). --}}
                     <div class="card"><div class="card-body p-4 d-flex gap-3">
                         <span class="icon-tile icon-tone-2 d-grid rounded-3 flex-shrink-0" style="width:3rem;height:3rem;place-items:center;font-size:1.3rem"><i class="bi bi-envelope"></i></span>
                         <div><h2 class="h6 mb-1">Email</h2><p class="small text-secondary mb-0"><a href="mailto:contact@brein.example">contact@brein.example</a></p></div>
