@@ -31,6 +31,13 @@ return [
         'host' => env('MOBILE_REVERB_HOST') ?: null,
         'port' => (int) env('MOBILE_REVERB_PORT', env('REVERB_PORT', 8080)),
         'scheme' => env('MOBILE_REVERB_SCHEME', env('REVERB_SCHEME', 'http')),
+
+        /*
+        | Queue connection used to broadcast chat events. "deferred" sends them right after the HTTP
+        | response, without a queue worker and with the lowest latency. Use "database" (or "redis")
+        | with `php artisan queue:work --queue=broadcasts` when broadcasts must be retried on failure.
+        */
+        'broadcast_queue' => env('MOBILE_BROADCAST_QUEUE', 'deferred'),
     ],
 
 ];

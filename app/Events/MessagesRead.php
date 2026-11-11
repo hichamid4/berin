@@ -16,13 +16,20 @@ class MessagesRead implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable, InteractsWithSockets;
 
+    /**
+     * Queue connection for the broadcast (config mobile.realtime.broadcast_queue).
+     */
+    public ?string $connection = null;
+
     public function __construct(
         public int $conversationId,
         public int $readerId,
         public int $senderId,
         public int $upToMessageId,
         public CarbonInterface $readAt,
-    ) {}
+    ) {
+        $this->connection = config('mobile.realtime.broadcast_queue');
+    }
 
     /**
      * @return array<int, PrivateChannel>

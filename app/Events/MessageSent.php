@@ -13,13 +13,21 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * A message was stored. Dispatched only after the sending transaction commits, then broadcast
- * by the queue worker to the conversation channel and to both participants' inbox channels.
+ * (right after the response, or by a queue worker) to the conversation channel and to both participants' inbox channels.
  */
 class MessageSent implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Message $message) {}
+    /**
+     * Queue connection for the broadcast (config mobile.realtime.broadcast_queue).
+     */
+    public ?string $connection = null;
+
+    public function __construct(public Message $message)
+    {
+        $this->connection = config('mobile.realtime.broadcast_queue');
+    }
 
     /**
      * @return array<int, PrivateChannel>
