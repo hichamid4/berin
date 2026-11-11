@@ -58,6 +58,11 @@ class Offer extends Model
         return $this->hasOne(Review::class, 'offer_id');
     }
 
+    public function conversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class);
+    }
+
     public function photos(): HasMany
     {
         return $this->hasMany(OfferPhoto::class)->orderBy('sort_order');

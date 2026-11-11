@@ -13,13 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['role', 'first_name', 'last_name', 'username', 'email', 'phone_e164', 'password'])]
 #[Hidden(['email', 'phone_e164', 'password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -78,6 +79,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isHandyman(): bool
     {
         return $this->role === UserRole::Handyman;
+    }
+
+    /**
+     * Homeowners and handymen may use the mobile application; administration stays on the website.
+     */
+    public function canUseMobileApp(): bool
+    {
+        return $this->isHomeowner() || $this->isHandyman();
     }
 
     public function fullName(): string

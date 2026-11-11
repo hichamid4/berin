@@ -44,8 +44,35 @@ class AppServiceProvider extends ServiceProvider
 
         $this->limitAdministratorSignIn();
         $this->limitContactMessages();
+        $this->limitMobileApi();
         $this->shareUnreadContactMessageCount();
         $this->brandAuthenticationEmails();
+    }
+
+    /**
+     * Mobile API limits (JSON 429 responses with Retry-After):
+     * - sign-in: 5 attempts per minute per email and IP, 20 per minute per IP;
+     * - authenticated API: 180 requests per minute per account;
+     * - sending messages: 30 per minute and 500 per hour per account.
+     */
+    private function limitMobileApi(): void
+    {
+        RateLimiter::for('mobile-login', function (Request $request): array {
+            $email = Str::transliterate(Str::lower($request->string('email')->toString()));
+
+            return [
+                Limit::perMinute(5)->by('mobile-login|'.$email.'|'.$request->ip()),
+                Limit::perMinute(20)->by('mobile-login-ip|'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('mobile-api', fn (Request $request): Limit => Limit::perMinute(180)
+            ->by('mobile-api|'.($request->user()?->id ?? $request->ip())));
+
+        RateLimiter::for('mobile-messages', fn (Request $request): array => [
+            Limit::perMinute(30)->by('mobile-messages|'.$request->user()?->id),
+            Limit::perHour(500)->by('mobile-messages-hour|'.$request->user()?->id),
+        ]);
     }
 
     /**

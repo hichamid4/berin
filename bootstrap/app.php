@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdministratorTwoFactor;
+use App\Http\Middleware\EnsureMobileAccount;
 use App\Http\Middleware\PrivateAdministrationArea;
 use App\Http\Middleware\RequireActiveAccount;
 use App\Http\Middleware\RequireRole;
@@ -15,6 +16,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -24,9 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RequireRole::class,
             'admin.2fa' => EnsureAdministratorTwoFactor::class,
             'admin.private' => PrivateAdministrationArea::class,
+            'mobile' => EnsureMobileAccount::class,
         ]);
         // Account-state, second-factor and role checks run before route-model binding, so a refused
         // request can never learn whether a record ID exists (no 404 versus 403 difference).
+        $middleware->prependToPriorityList(SubstituteBindings::class, EnsureMobileAccount::class);
         $middleware->prependToPriorityList(SubstituteBindings::class, RequireActiveAccount::class);
         $middleware->prependToPriorityList(SubstituteBindings::class, EnsureAdministratorTwoFactor::class);
         $middleware->prependToPriorityList(SubstituteBindings::class, RequireRole::class);

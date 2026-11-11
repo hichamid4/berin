@@ -9,6 +9,8 @@
         "php": "^8.3",
         "bacon/bacon-qr-code": "^3.0",
         "laravel/framework": "^13.17",
+        "laravel/reverb": "^1.13",
+        "laravel/sanctum": "^4.4",
         "laravel/tinker": "^3.0",
         "pragmarx/google2fa": "^9.0"
     },
