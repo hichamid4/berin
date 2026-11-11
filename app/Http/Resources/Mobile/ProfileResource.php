@@ -31,6 +31,10 @@ class ProfileResource extends MobileResource
             'email' => $this->email,
             'phone' => $this->phone_e164,
             'city' => $profile?->city,
+            'address' => $profile?->address,
+            'skills' => $this->isHandyman() && $profile?->relationLoaded('skills')
+                ? $profile->skills->map(fn ($skill): array => ['id' => $skill->id, 'name' => $skill->name])->values()
+                : [],
             'photo_url' => $photoPath !== null ? route('handymen.photo', $this->id) : null,
             'email_verified' => $this->hasVerifiedEmail(),
             'member_since' => self::timestamp($this->created_at),
