@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\HandymanProfile;
+use App\Models\HomeownerProfile;
 use App\Models\User;
 use App\UserRole;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -56,12 +58,17 @@ class AuthenticationTest extends TestCase
 
         $this->get($verificationUrl)->assertRedirect(route('homeowner.dashboard'));
         $this->assertNotNull($user->fresh()->email_verified_at);
+
+        // A real browser request reloads the user from the session; forget the guard's cached,
+        // still-unverified model so the next test request does the same.
+        $this->app['auth']->forgetGuards();
         $this->get(route('homeowner.dashboard'))->assertOk();
     }
 
     public function test_homeowner_handyman_and_administrator_logins_are_role_specific(): void
     {
-        $homeowner = User::factory()->create(['role' => UserRole::Homeowner]);
+        // Registration always creates the role profile; the factories mirror that.
+        $homeowner = HomeownerProfile::factory()->create()->user;
         $this->post(route('login.store'), ['email' => $homeowner->email, 'password' => 'Test-password-2026!'])
             ->assertRedirect(route('homeowner.dashboard'));
         $this->get(route('homeowner.dashboard'))->assertOk();
@@ -69,7 +76,7 @@ class AuthenticationTest extends TestCase
         $this->post(route('logout'))->assertRedirect(route('home'));
         $this->assertGuest();
 
-        $handyman = User::factory()->create(['role' => UserRole::Handyman]);
+        $handyman = HandymanProfile::factory()->create()->user;
         $this->post(route('handyman.login.store'), ['email' => $handyman->email, 'password' => 'Test-password-2026!'])
             ->assertRedirect(route('handyman.dashboard'));
         $this->get(route('handyman.dashboard'))->assertOk();
@@ -97,7 +104,7 @@ class AuthenticationTest extends TestCase
     {
         Notification::fake();
         $administrator = User::factory()->role(UserRole::Administrator)->create();
-        $homeowner = User::factory()->create(['role' => UserRole::Homeowner]);
+        $homeowner = HomeownerProfile::factory()->create()->user;
 
         $this->actingAs($homeowner)->get(route('homeowner.dashboard'))->assertOk();
         DB::table('users')->where('id', $homeowner->id)->update([
